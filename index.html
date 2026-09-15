@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AskIf 現場問 — 零事故即時問答</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <div style="text-align:center; padding: 2rem 0;">
+    <h1>AskIf 現場問</h1>
+    <p style="margin-top:0.5rem;">無狀態中繼 · 物理級私隱 · 關閉分頁即物理銷毀</p>
+  </div>
+
+  <div class="card">
+    <h3>🎤 培訓師 / 主持人</h3>
+    <p style="margin-bottom:1rem;">建立本地權威房間，由你這部設備直接擔任唯一真實來源。</p>
+    <button class="btn btn-primary" style="width:100%;" onclick="createRoom()">🚀 建立活動房間</button>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem;">
+    <h3>📱 參與者加入</h3>
+    <p>輸入主持人提供的 6 位數房號直接加入：</p>
+    <input type="text" id="join-room-id" placeholder="例如: 888888" maxlength="10">
+    <button class="btn" style="width:100%;" onclick="joinRoom()">進入提問室</button>
+  </div>
+
+  <script>
+    function createRoom() {
+      const roomId = Math.floor(100000 + Math.random() * 900000).toString();
+      window.location.href = `./host.html?room=${roomId}`;
+    }
+
+    function joinRoom() {
+      const id = document.getElementById('join-room-id').value.trim();
+      if (!id) return alert('請輸入房號');
+      window.location.href = `./audience.html?room=${id}`;
+    }
+  </script>
+</body>
+</html>
