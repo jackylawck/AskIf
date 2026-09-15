@@ -1,0 +1,12 @@
+name = "askif-relay"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+
+[durable_objects]
+bindings = [
+  { name = "ROOM_HUB", class_name = "RoomHub" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["RoomHub"]
