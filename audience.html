@@ -3,27 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AskIf — 現場提問</title>
+  <title data-i18n="audience_page_title">AskIf — 現場提問</title>
   <link rel="stylesheet" href="./css/style.css">
   <script src="./js/config.js"></script>
 </head>
 <body>
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-    <h3 id="room-id-tag">現場提問室</h3>
-    <span class="badge badge-peer" id="status-dot">連線中...</span>
+    <h3 id="room-id-tag" data-i18n="audience_room_title">現場提問室</h3>
+    <div style="display:flex; gap:0.5rem; align-items:center;">
+      <button id="lang-toggle" onclick="toggleLanguage()" class="btn" style="font-size:0.75rem; padding:0.25rem 0.5rem;">EN</button>
+      <span class="badge badge-peer" id="status-dot" data-i18n="status_connecting">連線中...</span>
+    </div>
   </div>
 
   <div class="card">
-    <textarea id="question-input" placeholder="輸入你想探討的問題（限 150 字）..." rows="3" maxlength="150"></textarea>
+    <textarea id="question-input" data-i18n-placeholder="question_input_placeholder" placeholder="輸入你想探討的問題（限 150 字）..." rows="3" maxlength="150"></textarea>
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
       <span id="char-count" style="font-size:0.75rem; color:var(--text-muted);">0/150</span>
     </div>
-    <button class="btn btn-primary" id="submit-btn" style="width:100%;" onclick="submitQuestion()">送出提問</button>
+    <button class="btn btn-primary" id="submit-btn" style="width:100%;" onclick="submitQuestion()" data-i18n="btn_submit">送出提問</button>
   </div>
 
-  <h4 style="margin: 1.5rem 0 0.5rem 0;">🔥 精選提問池</h4>
+  <h4 style="margin: 1.5rem 0 0.5rem 0;" data-i18n="featured_pool_title">🔥 精選提問池</h4>
   <div id="questions-pool"></div>
 
+  <script src="./js/i18n.js"></script>
   <script type="module" src="./js/audience.js"></script>
 </body>
 </html>
