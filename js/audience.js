@@ -1,25 +1,29 @@
 // js/audience.js
 import { Relay } from './relay.js';
+import { t } from './i18n.js';
 
-// 1. 票據與房號檢驗（杜絕多餘 fallback）
+// 1. 票據與房號檢驗
 const urlParams = new URLSearchParams(window.location.search);
 const roomTicket = urlParams.get('room');
 
 if (!roomTicket) {
-  showToast('缺少房號票據，請重新掃描現場 QR Code！', 'error');
+  showToast(t('toast_missing_ticket'), 'error');
   setTimeout(() => { window.location.href = './index.html'; }, 1500);
   throw new Error('[Audience] Missing room ticket');
 }
 
 const parts = roomTicket.split('.');
 if (parts.length !== 3 || !/^\d{6}$/.test(parts[0])) {
-  showToast('票據格式錯誤，請重新掃描！', 'error');
+  showToast(t('toast_missing_ticket'), 'error');
   throw new Error('[Audience] Invalid ticket structure');
 }
 const roomId = parts[0];
 const voteStorageKey = `askif_votes_${roomId}`;
 
-// 2. 密碼學安全 Client ID（杜絕 Math.random 降級）
+const roomIdText = document.getElementById('room-id-text');
+if (roomIdText) roomIdText.textContent = roomId;
+
+// 2. 密碼學安全 Client ID
 function getOrCreateClientId() {
   let cid = sessionStorage.getItem('askif_cid');
   if (!cid) {
@@ -33,7 +37,7 @@ function getOrCreateClientId() {
 
 const clientId = getOrCreateClientId();
 
-// 3. 投票持久化
+// 3. 本地持久化投票狀態
 let myUpvotes = new Set();
 try {
   const saved = JSON.parse(sessionStorage.getItem(voteStorageKey) || '[]');
@@ -44,42 +48,65 @@ try {
 
 let lastPoolVersion = -1;
 let lastSpotlightVersion = -1;
+let currentQuestionsCache = [];
+let currentSpotlightCache = null;
 
 // 4. 連線實例化
 const relay = new Relay(roomTicket, 'audience');
 
-// 5. 狀態監聽
-const unsubStatus = relay.onStatus((event) => {
+// 5. 狀態監聽與多語言同步
+let currentConnectionStatus = 'CONNECTING';
+
+function updateStatusBadge(status) {
+  currentConnectionStatus = status;
   const dot = document.getElementById('status-dot');
   if (!dot) return;
 
-  switch (event.status) {
+  switch (status) {
     case 'ONLINE':
       dot.className = 'badge badge-online';
-      dot.textContent = '● 在線';
-      relay.send({ type: 'REQ_SYNC', cid: clientId });
+      dot.textContent = t('status_connected');
       break;
     case 'CONNECTING':
       dot.className = 'badge badge-peer';
-      dot.textContent = '◌ 連線中';
+      dot.textContent = t('status_connecting');
       break;
     case 'OFFLINE':
       dot.className = 'badge badge-danger';
-      dot.textContent = '○ 斷線重試中';
+      dot.textContent = t('status_reconnecting');
       break;
     case 'FAILED':
       dot.className = 'badge badge-danger';
-      dot.textContent = '✕ 連線失敗';
-      showToast('與伺服器中斷連線，請檢查現場網路', 'error');
+      dot.textContent = t('status_failed');
+      showToast(t('toast_net_err'), 'error');
       break;
     case 'CLOSED':
       dot.className = 'badge badge-danger';
-      dot.textContent = '○ 活動已結束';
+      dot.textContent = t('status_closed');
       break;
+  }
+}
+
+const unsubStatus = relay.onStatus((event) => {
+  updateStatusBadge(event.status);
+  if (event.status === 'ONLINE') {
+    relay.send({ type: 'REQ_SYNC', cid: clientId });
   }
 });
 
-// 6. 業務監聽（含 Spotlight 版本防亂序）
+// 語言切換即時重繪
+const onLangChange = () => {
+  updateStatusBadge(currentConnectionStatus);
+  if (currentQuestionsCache.length > 0) {
+    renderQuestionList(currentQuestionsCache);
+  }
+  if (currentSpotlightCache) {
+    renderSpotlight(currentSpotlightCache);
+  }
+};
+window.addEventListener('languagechange', onLangChange);
+
+// 6. 業務監聽
 const unsubMessage = relay.onMessage((msg) => {
   switch (msg.type) {
     case 'SYNC_POOL': {
@@ -88,6 +115,7 @@ const unsubMessage = relay.onMessage((msg) => {
         lastPoolVersion = msg.version;
       }
       if (Array.isArray(msg.questions)) {
+        currentQuestionsCache = msg.questions;
         renderQuestionList(msg.questions);
       }
       break;
@@ -98,13 +126,14 @@ const unsubMessage = relay.onMessage((msg) => {
         if (msg.version <= lastSpotlightVersion) return;
         lastSpotlightVersion = msg.version;
       }
+      currentSpotlightCache = msg.question;
       renderSpotlight(msg.question);
       break;
     }
   }
 });
 
-// 7. 渲染題庫（統一 qid）
+// 7. 渲染題庫
 function renderQuestionList(questions) {
   const container = document.getElementById('question-list');
   if (!container) return;
@@ -117,28 +146,28 @@ function renderQuestionList(questions) {
     if (!qid) continue;
 
     const card = document.createElement('div');
-    card.className = 'question-card';
+    card.className = 'card';
     card.id = `q-${qid}`;
+    card.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;';
 
     const textEl = document.createElement('div');
-    textEl.className = 'question-text';
+    textEl.style.cssText = 'word-break:break-word; flex:1; margin-right:1rem;';
     textEl.textContent = q.text || '';
 
     const metaEl = document.createElement('div');
-    metaEl.className = 'question-meta';
+    metaEl.style.cssText = 'display:flex; align-items:center; gap:0.5rem; flex-shrink:0;';
 
     const countEl = document.createElement('span');
-    countEl.className = 'upvote-count';
     countEl.id = `count-${qid}`;
+    countEl.style.cssText = 'font-weight:600; color:#2563eb; font-size:0.9rem;';
     countEl.textContent = `▲ ${q.upvotes || 0}`;
 
     const upvoteBtn = document.createElement('button');
-    upvoteBtn.className = 'btn-upvote';
-    upvoteBtn.id = `up-${qid}`;
-
     const hasVoted = myUpvotes.has(qid);
+    upvoteBtn.className = hasVoted ? 'btn' : 'btn btn-primary';
+    upvoteBtn.id = `up-${qid}`;
     upvoteBtn.disabled = hasVoted;
-    upvoteBtn.textContent = hasVoted ? '已附議' : '附議';
+    upvoteBtn.textContent = hasVoted ? t('btn_voted') : t('btn_upvote');
 
     if (!hasVoted) {
       upvoteBtn.onclick = () => handleUpvote(qid);
@@ -154,18 +183,18 @@ function renderQuestionList(questions) {
   container.replaceChildren(fragment);
 }
 
-// 8. 附議送出（樂觀數值跳動 + 回滾防護）
+// 8. 附議處理（樂觀更新 + 失敗回滾）
 function handleUpvote(qid) {
   if (myUpvotes.has(qid)) return;
 
   const btn = document.getElementById(`up-${qid}`);
   const countEl = document.getElementById(`count-${qid}`);
 
-  // 樂觀更新：狀態鎖定 + 數字即時跳動
   myUpvotes.add(qid);
   if (btn) {
     btn.disabled = true;
-    btn.textContent = '已附議';
+    btn.className = 'btn';
+    btn.textContent = t('btn_voted');
   }
   let prevCount = 0;
   if (countEl) {
@@ -182,24 +211,24 @@ function handleUpvote(qid) {
   if (success) {
     sessionStorage.setItem(voteStorageKey, JSON.stringify([...myUpvotes]));
   } else {
-    // 網路不可用，雙重回滾
     myUpvotes.delete(qid);
     if (btn) {
       btn.disabled = false;
-      btn.textContent = '附議';
+      btn.className = 'btn btn-primary';
+      btn.textContent = t('btn_upvote');
     }
     if (countEl) {
       countEl.textContent = `▲ ${prevCount}`;
     }
-    showToast('網路發送失敗，請稍後重試', 'error');
+    showToast(t('toast_net_err'), 'error');
   }
 }
 
-// 9. 提問表單（嚴格對齊 PROTOCOL v1.1.0：觀眾不帶 qid）
+// 9. 提問送出控制
 const askForm = document.getElementById('ask-form');
 const askInput = document.getElementById('ask-input');
 const charCount = document.getElementById('char-count');
-const submitBtn = askForm ? askForm.querySelector('button[type="submit"]') : null;
+const submitBtn = document.getElementById('submit-btn');
 
 if (askInput && charCount) {
   askInput.oninput = () => {
@@ -214,14 +243,12 @@ if (askForm && askInput) {
     if (!text) return;
 
     if (text.length > 150) {
-      showToast('提問文字上限為 150 字', 'error');
+      showToast(t('toast_limit_150'), 'error');
       return;
     }
 
-    // 防連點防護
     if (submitBtn) submitBtn.disabled = true;
 
-    // 依協議只送出 text, cid, timestamp
     const success = relay.send({
       type: 'SUBMIT_QUESTION',
       text,
@@ -232,16 +259,16 @@ if (askForm && askInput) {
     if (success) {
       askInput.value = '';
       if (charCount) charCount.textContent = '0/150';
-      showToast('問題已送出，等待審核！', 'success');
+      showToast(t('toast_submitted'), 'success');
       setTimeout(() => { if (submitBtn) submitBtn.disabled = false; }, 1000);
     } else {
-      showToast('發送失敗，網路連線異常', 'error');
+      showToast(t('toast_net_err'), 'error');
       if (submitBtn) submitBtn.disabled = false;
     }
   };
 }
 
-// 10. 焦點推題渲染（支援 null 取消焦點語意）
+// 10. 焦點題目渲染
 function renderSpotlight(question) {
   const box = document.getElementById('spotlight-box');
   if (!box) return;
@@ -253,9 +280,21 @@ function renderSpotlight(question) {
   }
 
   box.style.display = 'block';
-  box.textContent = `【目前討論】 ${question.text}`;
+  box.replaceChildren();
+
+  const badge = document.createElement('span');
+  badge.style.cssText = 'color:#94a3b8; font-size:0.85rem; font-weight:600; display:block; margin-bottom:0.25rem;';
+  badge.textContent = t('spotlight_prefix');
+
+  const textNode = document.createElement('div');
+  textNode.style.cssText = 'font-size:1.1rem; font-weight:700;';
+  textNode.textContent = question.text;
+
+  box.appendChild(badge);
+  box.appendChild(textNode);
 }
 
+// 11. 輕量非阻塞 Toast
 function showToast(msg, type = 'info') {
   let toast = document.getElementById('app-toast');
   if (!toast) {
@@ -279,8 +318,10 @@ function showToast(msg, type = 'info') {
   }, 2500);
 }
 
+// 12. 卸載清理
 window.addEventListener('beforeunload', () => {
-  unsubStatus();
-  unsubMessage();
+  window.removeEventListener('languagechange', onLangChange);
+  unsubStatus?.();
+  unsubMessage?.();
   relay?.disconnect();
 });
