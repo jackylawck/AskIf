@@ -70,7 +70,7 @@ export class Relay {
             try {
               this.#ws.close(4000, 'PONG Timeout');
             } catch {}
-            return;
+            return; // 修正：主動關閉後立即中斷，禁止繼續送出 PING
           }
 
           // 準備發出新一輪檢測，重設標記
@@ -132,7 +132,10 @@ export class Relay {
         const delay = baseDelay + jitter;
 
         this.#retryCount++;
-        this.#reconnectTimer = setTimeout(() => this.connect(), delay);
+        this.#reconnectTimer = setTimeout(() => {
+          this.#reconnectTimer = null;
+          this.connect();
+        }, delay);
       } else {
         this.#emitStatus({ type: 'STATUS', status: 'FAILED', message: 'Max retries reached' });
       }
@@ -146,14 +149,16 @@ export class Relay {
   send(payload) {
     if (this.#ws && this.#ws.readyState === WebSocket.OPEN) {
       try {
-        this.#ws.send(JSON.stringify(payload));
+        // 修正：相容字串與物件，避免字串被二次 JSON.stringify
+        const data = typeof payload === 'string' ? payload : JSON.stringify(payload);
+        this.#ws.send(data);
         return true;
       } catch (err) {
         console.error('[Relay Send Error]:', err);
         return false;
       }
     }
-    console.warn('[Relay] Send failed: WebSocket is not open', payload?.type || 'UNKNOWN');
+    console.warn('[Relay] Send failed: WebSocket is not open', typeof payload === 'object' ? payload?.type : 'STRING_PAYLOAD');
     return false;
   }
 
