@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <title>AskIf — 現場大螢幕</title>
+  <script src="./js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background:#0d0f12; color:#fff; font-family:-apple-system, sans-serif;
+      width:100vw; height:100vh; overflow:hidden; user-select:none; cursor:none;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+    }
+    #idle-view { text-align:center; transition:opacity 0.3s; }
+    .qr-card { background:#fff; padding:16px; border-radius:16px; display:inline-block; margin:2vmin 0; }
+    #spotlight-view {
+      display:none; text-align:center; padding:0 8vmin; max-width:90%;
+      animation: zoomIn 0.22s cubic-bezier(0, 0, 0.2, 1);
+    }
+    @keyframes zoomIn { from { transform: scale(0.92); opacity:0; } to { transform: scale(1); opacity:1; } }
+    .spot-text { font-size: clamp(2.5rem, 6vmin, 6rem); font-weight:700; line-height:1.35; word-break:break-word; }
+    .spot-meta { margin-top:3vmin; font-size: clamp(1.2rem, 2.5vmin, 2.5rem); color:#4a9eff; font-weight:700; }
+    #mini-qr { position:fixed; bottom:3vmin; right:3vmin; display:none; background:#fff; padding:8px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <div id="idle-view">
+    <h1 style="font-size:clamp(2rem, 4vmin, 3.5rem); font-weight:700;">現場提問與互動</h1>
+    <div class="qr-card" id="main-qr"></div>
+    <p id="room-code-label" style="font-size:clamp(1.2rem, 2.5vmin, 2rem); color:#4a9eff; font-weight:700;">房號：------</p>
+    <p style="color:#9aa0a6; font-size:clamp(1rem, 1.8vmin, 1.5rem); margin-top:1vmin;">掃描 QR Code 提交問題 / 附議</p>
+  </div>
+
+  <div id="spotlight-view">
+    <div class="spot-text" id="spot-text">載入中...</div>
+    <div class="spot-meta" id="spot-upvotes">+0 附議</div>
+  </div>
+
+  <div id="mini-qr"></div>
+
+  <script type="module" src="./js/display.js"></script>
+</body>
+</html>
