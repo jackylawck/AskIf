@@ -1,5 +1,10 @@
 const translations = {
   zh: {
+    // 共用
+    room_label: "房號",
+    loading: "載入中...",
+    upvote_unit: "附議",
+    // index.html
     index_title: "AskIf 現場問 — 零事故即時問答",
     app_name: "AskIf 現場問",
     app_subtitle: "無狀態中繼 · 物理級私隱 · 關閉分頁即物理銷毀",
@@ -11,8 +16,8 @@ const translations = {
     input_room_placeholder: "例如: 888888",
     btn_join_room: "進入提問室",
     alert_no_room: "請輸入房號",
+    // host.html
     host_page_title: "AskIf — 主持人戰情 Pad",
-    room_label: "房號",
     status_syncing: "連線同步中...",
     status_connected: "● 已同步雲端中繼",
     status_reconnecting: "○ 斷線重試中...",
@@ -24,9 +29,28 @@ const translations = {
     btn_approve: "✅ 通過",
     btn_reject: "❌ 刪除",
     btn_hold_push: "長按推題 (0.8s)",
-    btn_active: "🌟 播映中"
+    btn_active: "🌟 播映中",
+    // display.html
+    display_title: "AskIf — 現場大螢幕",
+    display_heading: "現場提問與互動",
+    display_scan_hint: "掃描 QR Code 提交問題 / 附議",
+    // audience.html
+    audience_page_title: "AskIf — 現場提問",
+    audience_room_title: "現場提問室",
+    status_connecting: "連線中...",
+    question_input_placeholder: "輸入你想探討的問題（限 150 字）...",
+    btn_submit: "送出提問",
+    featured_pool_title: "🔥 精選提問池",
+    btn_upvote: "▲ 附議",
+    toast_sent: "提問已送達後台審核隊列！",
+    toast_empty: "請先輸入內容再送出。"
   },
   en: {
+    // Common
+    room_label: "Room",
+    loading: "Loading...",
+    upvote_unit: "Upvotes",
+    // index.html
     index_title: "AskIf — Zero-Incident Live Q&A",
     app_name: "AskIf Live",
     app_subtitle: "Stateless Relay · Ephemeral Privacy · Purged on Tab Close",
@@ -38,8 +62,8 @@ const translations = {
     input_room_placeholder: "e.g. 888888",
     btn_join_room: "Enter Room",
     alert_no_room: "Please enter a room PIN",
+    // host.html
     host_page_title: "AskIf — Host Control Pad",
-    room_label: "Room",
     status_syncing: "Syncing connection...",
     status_connected: "● Cloud Relay Synced",
     status_reconnecting: "○ Reconnecting...",
@@ -51,7 +75,21 @@ const translations = {
     btn_approve: "✅ Approve",
     btn_reject: "❌ Delete",
     btn_hold_push: "Hold to Push (0.8s)",
-    btn_active: "🌟 On Screen"
+    btn_active: "🌟 On Screen",
+    // display.html
+    display_title: "AskIf — Live Display",
+    display_heading: "Live Q&A & Interaction",
+    display_scan_hint: "Scan QR Code to submit questions & upvote",
+    // audience.html
+    audience_page_title: "AskIf — Audience Live Q&A",
+    audience_room_title: "Live Q&A Room",
+    status_connecting: "Connecting...",
+    question_input_placeholder: "Type your question here (max 150 chars)...",
+    btn_submit: "Submit Question",
+    featured_pool_title: "🔥 Featured Questions",
+    btn_upvote: "▲ Upvote",
+    toast_sent: "Submitted to review queue!",
+    toast_empty: "Please type something before submitting."
   }
 };
 
