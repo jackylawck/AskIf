@@ -1,0 +1,55 @@
+:root {
+  --bg: #0d0f12;
+  --card: #161920;
+  --border: #282c35;
+  --accent: #4a9eff;
+  --spotlight: #ff4757;
+  --success: #00b894;
+  --text: #e8eaed;
+  --text-muted: #9aa0a6;
+  --font: -apple-system, BlinkMacSystemFont, "PingFang HK", "Microsoft JhengHei", sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--text); font-family: var(--font);
+  padding: 1.25rem; max-width: 640px; margin: 0 auto; line-height: 1.5;
+}
+
+h1, h2, h3 { font-weight: 700; color: #fff; }
+p { color: var(--text-muted); font-size: 0.9rem; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #2a2f3a; color: #fff; border: none; border-radius: 6px;
+  padding: 0.75rem 1.25rem; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  text-decoration: none; transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.9; }
+.btn-primary { background: var(--accent); }
+.btn-success { background: var(--success); }
+.btn-danger { background: var(--spotlight); }
+
+input, textarea {
+  width: 100%; background: #1a1d24; border: 1px solid var(--border);
+  color: #fff; padding: 0.75rem; border-radius: 6px; font-size: 1rem;
+  font-family: inherit; margin-top: 0.5rem; margin-bottom: 0.75rem;
+}
+
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem;
+}
+
+.badge {
+  display: inline-block; font-size: 0.75rem; font-weight: 700;
+  padding: 0.2rem 0.5rem; border-radius: 4px;
+}
+.badge-online { background: rgba(0, 184, 148, 0.2); color: var(--success); }
+.badge-danger { background: rgba(255, 71, 87, 0.2); color: var(--spotlight); }
+.badge-peer { background: rgba(74, 158, 255, 0.2); color: var(--accent); }
+
+.qr-box {
+  background: #fff; padding: 12px; border-radius: 8px;
+  display: inline-block; line-height: 0;
+}
