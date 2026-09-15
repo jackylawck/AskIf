@@ -9,4 +9,4 @@ bindings = [
 
 [[migrations]]
 tag = "v1"
-new_classes = ["RoomHub"]
+new_sqlite_classes = ["RoomHub"]
