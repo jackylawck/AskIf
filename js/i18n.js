@@ -17,7 +17,12 @@ const translations = {
     'status_syncing': '連線中...',
     'input_pwd_prompt': '請輸入主持人管理密碼：',
     'pwd_error': '主持人密碼錯誤！請重新輸入。',
+    'pwd_empty': '請輸入密碼',
     'room_label': '房號',
+    
+    // 首頁與通用按鈕
+    'btn_cancel': '取消',
+    'btn_confirm_create': '確認開房',
     
     // 觀眾端
     'ask_placeholder': '請輸入您的問題（限 150 字）...',
@@ -55,7 +60,12 @@ const translations = {
     'status_syncing': 'Connecting...',
     'input_pwd_prompt': 'Enter Host Admin Password:',
     'pwd_error': 'Invalid Password! Please re-enter.',
+    'pwd_empty': 'Please enter password',
     'room_label': 'Room',
+    
+    // Portal & General Buttons
+    'btn_cancel': 'Cancel',
+    'btn_confirm_create': 'Confirm',
     
     // Audience
     'ask_placeholder': 'Type your question (max 150 chars)...',
