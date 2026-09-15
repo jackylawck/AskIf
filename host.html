@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AskIf — 主持人戰情 Pad</title>
+  <title data-i18n="host_page_title">AskIf — 主持人 Pad</title>
   <link rel="stylesheet" href="./css/style.css">
   <script src="./js/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
@@ -11,28 +11,34 @@
 <body>
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
     <div>
-      <h2>房號：<span id="room-id-label" style="color:var(--accent);">------</span></h2>
-      <span class="badge badge-online" id="sync-badge">連線同步中...</span>
+      <h2><span data-i18n="room_label">房號</span>：<span id="room-id-label" style="color:var(--accent);">------</span></h2>
+      <span class="badge badge-online" id="sync-badge" data-i18n="status_syncing">連線同步中...</span>
     </div>
-    <div style="text-align:right;">
-      <a class="btn" id="open-display-btn" target="_blank" style="font-size:0.8rem; padding:0.4rem 0.8rem;">🖥️ 開大螢幕</a>
+    <div style="display:flex; gap:0.5rem; align-items:center;">
+      <button id="lang-toggle" onclick="toggleLanguage()" class="btn" style="font-size:0.8rem; padding:0.4rem 0.6rem;">EN</button>
+      <a class="btn" id="open-display-btn" target="_blank" style="font-size:0.8rem; padding:0.4rem 0.8rem;" data-i18n="open_display">🖥️ 開大螢幕</a>
     </div>
   </div>
 
   <div class="card" style="display:flex; gap:1rem; align-items:center;">
     <div class="qr-box" id="host-qr"></div>
     <div>
-      <p style="font-weight:600;">📱 觀眾現場掃碼加入</p>
-      <p style="font-size:0.75rem; margin-top:0.25rem;">純記憶體運作，關閉分頁即物理銷毀。</p>
+      <p style="font-weight:600;" data-i18n="qr_hint_title">📱 觀眾現場掃碼加入</p>
+      <p style="font-size:0.75rem; margin-top:0.25rem;" data-i18n="qr_hint_desc">純記憶體運作，關閉分頁即物理銷毀。</p>
     </div>
   </div>
 
-  <h3 style="margin-top:1.5rem; font-size:1.1rem;">📥 待審題庫 (<span id="inbox-count">0</span>)</h3>
+  <h3 style="margin-top:1.5rem; font-size:1.1rem;">
+    <span data-i18n="inbox_title">📥 待審題庫</span> (<span id="inbox-count">0</span>)
+  </h3>
   <div id="inbox-list"></div>
 
-  <h3 style="margin-top:1.5rem; font-size:1.1rem;">🚀 候選與大螢幕推題 (<span id="approved-count">0</span>)</h3>
+  <h3 style="margin-top:1.5rem; font-size:1.1rem;">
+    <span data-i18n="approved_title">🚀 候選與大螢幕推題</span> (<span id="approved-count">0</span>)
+  </h3>
   <div id="approved-list"></div>
 
+  <script src="./js/i18n.js"></script>
   <script type="module" src="./js/host.js"></script>
 </body>
 </html>
