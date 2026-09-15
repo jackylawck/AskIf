@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,16 +12,16 @@
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
     <div>
       <h2><span data-i18n="room_label">房號</span>：<span id="room-id-label" style="color:var(--accent);">------</span></h2>
-      <span class="badge badge-online" id="sync-badge" data-i18n="status_syncing">連線同步中...</span>
+      <span class="badge badge-offline" id="sync-badge">◌ 連線中...</span>
     </div>
     <div style="display:flex; gap:0.5rem; align-items:center;">
       <button id="lang-toggle" onclick="toggleLanguage()" class="btn" style="font-size:0.8rem; padding:0.4rem 0.6rem;">EN</button>
-      <a class="btn" id="open-display-btn" target="_blank" style="font-size:0.8rem; padding:0.4rem 0.8rem;" data-i18n="open_display">🖥️ 開大螢幕</a>
+      <a class="btn" id="open-display-btn" target="_blank" href="./display.html" style="font-size:0.8rem; padding:0.4rem 0.8rem;" data-i18n="open_display">🖥️ 開大螢幕</a>
     </div>
   </div>
 
   <div class="card" style="display:flex; gap:1rem; align-items:center;">
-    <div class="qr-box" id="host-qr"></div>
+    <div class="qr-box" id="host-qr" style="width:80px; height:80px; display:flex; align-items:center; justify-content:center;"></div>
     <div>
       <p style="font-weight:600;" data-i18n="qr_hint_title">📱 觀眾現場掃碼加入</p>
       <p style="font-size:0.75rem; margin-top:0.25rem;" data-i18n="qr_hint_desc">純記憶體運作，關閉分頁即物理銷毀。</p>
@@ -38,7 +38,7 @@
   </h3>
   <div id="approved-list"></div>
 
-  <script src="./js/i18n.js"></script>
+  <script type="module" src="./js/i18n.js"></script>
   <script type="module" src="./js/host.js"></script>
 </body>
 </html>
