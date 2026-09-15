@@ -3,28 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AskIf 現場問 — 零事故即時問答</title>
+  <title data-i18n="index_title">AskIf 現場問 — 即時問答</title>
   <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-  <div style="text-align:center; padding: 2rem 0;">
-    <h1>AskIf 現場問</h1>
-    <p style="margin-top:0.5rem;">無狀態中繼 · 物理級私隱 · 關閉分頁即物理銷毀</p>
+  <div style="display:flex; justify-content:flex-end; padding: 0.5rem 1rem;">
+    <button id="lang-toggle" onclick="toggleLanguage()" class="btn" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">EN</button>
+  </div>
+
+  <div style="text-align:center; padding: 1.5rem 0 2rem 0;">
+    <h1 data-i18n="app_name">AskIf 現場問</h1>
+    <p style="margin-top:0.5rem;" data-i18n="app_subtitle">無狀態中繼 · 物理級私隱 · 關閉分頁即物理銷毀</p>
   </div>
 
   <div class="card">
-    <h3>🎤 培訓師 / 主持人</h3>
-    <p style="margin-bottom:1rem;">建立本地權威房間，由你這部設備直接擔任唯一真實來源。</p>
-    <button class="btn btn-primary" style="width:100%;" onclick="createRoom()">🚀 建立活動房間</button>
+    <h3 data-i18n="host_role_title">🎤 培訓師 / 主持人</h3>
+    <p style="margin-bottom:1rem;" data-i18n="host_role_desc">建立本地權威房間，由你這部設備直接擔任唯一真實來源。</p>
+    <button class="btn btn-primary" style="width:100%;" onclick="createRoom()" data-i18n="btn_create_room">🚀 建立活動房間</button>
   </div>
 
   <div class="card" style="margin-top:1.5rem;">
-    <h3>📱 參與者加入</h3>
-    <p>輸入主持人提供的 6 位數房號直接加入：</p>
-    <input type="text" id="join-room-id" placeholder="例如: 888888" maxlength="10">
-    <button class="btn" style="width:100%;" onclick="joinRoom()">進入提問室</button>
+    <h3 data-i18n="audience_join_title">📱 參與者加入</h3>
+    <p data-i18n="audience_join_desc">輸入主持人提供的 6 位數房號直接加入：</p>
+    <input type="text" id="join-room-id" data-i18n-placeholder="input_room_placeholder" placeholder="例如: 888888" maxlength="10">
+    <button class="btn" style="width:100%;" onclick="joinRoom()" data-i18n="btn_join_room">進入提問室</button>
   </div>
 
+  <script src="./js/i18n.js"></script>
   <script>
     function createRoom() {
       const roomId = Math.floor(100000 + Math.random() * 900000).toString();
@@ -33,7 +38,7 @@
 
     function joinRoom() {
       const id = document.getElementById('join-room-id').value.trim();
-      if (!id) return alert('請輸入房號');
+      if (!id) return alert(t('alert_no_room'));
       window.location.href = `./audience.html?room=${id}`;
     }
   </script>
