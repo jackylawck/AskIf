@@ -1,128 +1,163 @@
+// js/i18n.js
+
+const isDev = Boolean(
+  location.hostname === 'localhost' ||
+  location.hostname === '127.0.0.1' ||
+  location.hostname.endsWith('.internal')
+);
+
+// 1. 精確定義語言字典（採用 zh-Hant 繁體標準）
 const translations = {
-  zh: {
-    // 共用
-    room_label: "房號",
-    loading: "載入中...",
-    upvote_unit: "附議",
-    // index.html
-    index_title: "AskIf 現場問 — 零事故即時問答",
-    app_name: "AskIf 現場問",
-    app_subtitle: "無狀態中繼 · 物理級私隱 · 關閉分頁即物理銷毀",
-    host_role_title: "🎤 培訓師 / 主持人",
-    host_role_desc: "建立本地權威房間，由你這部設備直接擔任唯一真實來源。",
-    btn_create_room: "🚀 建立活動房間",
-    audience_join_title: "📱 參與者加入",
-    audience_join_desc: "輸入主持人提供的 6 位數房號直接加入：",
-    input_room_placeholder: "例如: 888888",
-    btn_join_room: "進入提問室",
-    alert_no_room: "請輸入房號",
-    // host.html
-    host_page_title: "AskIf — 主持人戰情 Pad",
-    status_syncing: "連線同步中...",
-    status_connected: "● 已同步雲端中繼",
-    status_reconnecting: "○ 斷線重試中...",
-    open_display: "🖥️ 開大螢幕",
-    qr_hint_title: "📱 觀眾現場掃碼加入",
-    qr_hint_desc: "純記憶體運作，關閉分頁即物理銷毀。",
-    inbox_title: "📥 待審題庫",
-    approved_title: "🚀 候選與大螢幕推題",
-    btn_approve: "✅ 通過",
-    btn_reject: "❌ 刪除",
-    btn_hold_push: "長按推題 (0.8s)",
-    btn_active: "🌟 播映中",
-    // display.html
-    display_title: "AskIf — 現場大螢幕",
-    display_heading: "現場提問與互動",
-    display_scan_hint: "掃描 QR Code 提交問題 / 附議",
-    // audience.html
-    audience_page_title: "AskIf — 現場提問",
-    audience_room_title: "現場提問室",
-    status_connecting: "連線中...",
-    question_input_placeholder: "輸入你想探討的問題（限 150 字）...",
-    btn_submit: "送出提問",
-    featured_pool_title: "🔥 精選提問池",
-    btn_upvote: "▲ 附議",
-    toast_sent: "提問已送達後台審核隊列！",
-    toast_empty: "請先輸入內容再送出。"
+  'zh-Hant': {
+    // 系統與狀態
+    'status_connecting': '◌ 連線中...',
+    'status_connected': '● 已同步雲端中繼',
+    'status_reconnecting': '○ 斷線重試中...',
+    'status_closed': '○ 活動已結束',
+    'status_syncing': '連線中...',
+    'input_pwd_prompt': '請輸入主持人管理密碼：',
+    'pwd_error': '主持人密碼錯誤！請重新輸入。',
+    'room_label': '房號',
+    
+    // 觀眾端
+    'ask_placeholder': '請輸入您的問題（限 150 字）...',
+    'btn_submit': '送出提問',
+    'btn_upvote': '附議',
+    'btn_voted': '已附議',
+    'spotlight_prefix': '【目前討論】',
+    'toast_submitted': '問題已送出，等待審核！',
+    'toast_limit_150': '提問文字上限為 150 字',
+    'toast_net_err': '網路發送失敗，請稍後重試',
+    'toast_missing_ticket': '缺少房號票據，請重新掃描現場 QR Code！',
+    
+    // 主持人端
+    'tab_audit': '待審核題目',
+    'tab_approved': '已通過題庫',
+    'btn_approve': '通過',
+    'btn_reject': '拒絕',
+    'btn_spotlight': '設為焦點',
+    'btn_cancel_spotlight': '取消焦點',
+    'btn_delete': '刪除',
+    'empty_pending': '目前沒有待審核題目',
+    'empty_approved': '目前題庫是空的',
+    
+    // 大螢幕
+    'display_standby_title': '現場互動問答',
+    'display_standby_subtitle': '請掃描 QR Code 提問或為問題附議',
+    'display_leaderboard': '熱門提問榜'
   },
-  en: {
-    // Common
-    room_label: "Room",
-    loading: "Loading...",
-    upvote_unit: "Upvotes",
-    // index.html
-    index_title: "AskIf — Zero-Incident Live Q&A",
-    app_name: "AskIf Live",
-    app_subtitle: "Stateless Relay · Ephemeral Privacy · Purged on Tab Close",
-    host_role_title: "🎤 Speaker / Moderator",
-    host_role_desc: "Establish authoritative room. Your device acts as the single source of truth.",
-    btn_create_room: "🚀 Create Event Room",
-    audience_join_title: "📱 Join as Audience",
-    audience_join_desc: "Enter the 6-digit room PIN provided by the host:",
-    input_room_placeholder: "e.g. 888888",
-    btn_join_room: "Enter Room",
-    alert_no_room: "Please enter a room PIN",
-    // host.html
-    host_page_title: "AskIf — Host Control Pad",
-    status_syncing: "Syncing connection...",
-    status_connected: "● Cloud Relay Synced",
-    status_reconnecting: "○ Reconnecting...",
-    open_display: "🖥️ Open Screen",
-    qr_hint_title: "📱 Scan QR Code to Join",
-    qr_hint_desc: "In-memory execution, purged on tab close.",
-    inbox_title: "📥 Pending Moderation",
-    approved_title: "🚀 Candidate & Push to Screen",
-    btn_approve: "✅ Approve",
-    btn_reject: "❌ Delete",
-    btn_hold_push: "Hold to Push (0.8s)",
-    btn_active: "🌟 On Screen",
-    // display.html
-    display_title: "AskIf — Live Display",
-    display_heading: "Live Q&A & Interaction",
-    display_scan_hint: "Scan QR Code to submit questions & upvote",
-    // audience.html
-    audience_page_title: "AskIf — Audience Live Q&A",
-    audience_room_title: "Live Q&A Room",
-    status_connecting: "Connecting...",
-    question_input_placeholder: "Type your question here (max 150 chars)...",
-    btn_submit: "Submit Question",
-    featured_pool_title: "🔥 Featured Questions",
-    btn_upvote: "▲ Upvote",
-    toast_sent: "Submitted to review queue!",
-    toast_empty: "Please type something before submitting."
+  'en': {
+    // System & Status
+    'status_connecting': '◌ Connecting...',
+    'status_connected': '● Cloud Synced',
+    'status_reconnecting': '○ Reconnecting...',
+    'status_closed': '○ Session Closed',
+    'status_syncing': 'Connecting...',
+    'input_pwd_prompt': 'Enter Host Admin Password:',
+    'pwd_error': 'Invalid Password! Please re-enter.',
+    'room_label': 'Room',
+    
+    // Audience
+    'ask_placeholder': 'Type your question (max 150 chars)...',
+    'btn_submit': 'Submit',
+    'btn_upvote': 'Upvote',
+    'btn_voted': 'Upvoted',
+    'spotlight_prefix': '[Now Discussing]',
+    'toast_submitted': 'Question submitted, awaiting moderation!',
+    'toast_limit_150': 'Question must be within 150 characters',
+    'toast_net_err': 'Network error, please retry',
+    'toast_missing_ticket': 'Missing room ticket. Please scan the QR Code again!',
+    
+    // Host
+    'tab_audit': 'Pending Review',
+    'tab_approved': 'Approved Pool',
+    'btn_approve': 'Approve',
+    'btn_reject': 'Reject',
+    'btn_spotlight': 'Spotlight',
+    'btn_cancel_spotlight': 'Unspotlight',
+    'btn_delete': 'Delete',
+    'empty_pending': 'No questions pending review',
+    'empty_approved': 'Question pool is empty',
+    
+    // Display
+    'display_standby_title': 'Live Q&A Session',
+    'display_standby_subtitle': 'Scan QR Code to submit questions or upvote',
+    'display_leaderboard': 'Top Questions'
   }
 };
 
-let currentLang = localStorage.getItem('askif_lang') || 'zh';
+const SUPPORTED_LANGS = ['zh-Hant', 'en'];
+let currentLang = localStorage.getItem('askif_lang') || 'zh-Hant';
 
-window.t = function(key) {
-  return (translations[currentLang] && translations[currentLang][key]) || key;
-};
+// 舊版快取若存的是 'zh' 則自動正規化
+if (currentLang === 'zh') currentLang = 'zh-Hant';
+if (!SUPPORTED_LANGS.includes(currentLang)) currentLang = 'zh-Hant';
 
-window.setLanguage = function(lang) {
+// 2. 翻譯取值函式（含雙向 Fallback 機制與 Dev 環境日誌隔離）
+export function t(key) {
+  const activeDict = translations[currentLang];
+  if (activeDict && activeDict[key]) {
+    return activeDict[key];
+  }
+
+  const fallbackLang = currentLang === 'zh-Hant' ? 'en' : 'zh-Hant';
+  const fallbackDict = translations[fallbackLang];
+  if (fallbackDict && fallbackDict[key]) {
+    if (isDev) {
+      console.warn(`[i18n] Key "${key}" missing in ${currentLang}, falling back to ${fallbackLang}`);
+    }
+    return fallbackDict[key];
+  }
+
+  return key;
+}
+
+// 3. 語言切換與 DOM 渲染更新
+export function setLanguage(lang) {
+  if (!SUPPORTED_LANGS.includes(lang)) return;
+
   currentLang = lang;
   localStorage.setItem('askif_lang', lang);
 
-  document.querySelectorAll('[data-i18n]').forEach(el => {
+  // 動態更新 <html lang="...">
+  document.documentElement.lang = lang;
+
+  // 渲染純文字節點：嚴格使用 textContent
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
     const key = el.getAttribute('data-i18n');
-    el.innerHTML = t(key);
+    if (key) {
+      el.textContent = t(key);
+    }
   });
 
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+  // 渲染 Placeholder
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
     const key = el.getAttribute('data-i18n-placeholder');
-    el.placeholder = t(key);
+    if (key) {
+      el.setAttribute('placeholder', t(key));
+    }
   });
 
+  // 補回：語言切換按鈕文本動態更新（顯示下一個切換目標）
   const toggleBtn = document.getElementById('lang-toggle');
   if (toggleBtn) {
-    toggleBtn.textContent = currentLang === 'zh' ? 'EN' : '中文';
+    toggleBtn.textContent = currentLang === 'zh-Hant' ? 'EN' : '中文';
   }
-};
+}
 
-window.toggleLanguage = function() {
-  window.setLanguage(currentLang === 'zh' ? 'en' : 'zh');
-};
+export function toggleLanguage() {
+  const nextLang = currentLang === 'zh-Hant' ? 'en' : 'zh-Hant';
+  setLanguage(nextLang);
+}
 
-document.addEventListener('DOMContentLoaded', () => {
-  window.setLanguage(currentLang);
-});
+// 4. 掛載到 window 物件相容全域與現有 HTML 標籤
+window.t = t;
+window.setLanguage = setLanguage;
+window.toggleLanguage = toggleLanguage;
+
+// 5. DOM 載入時機防禦：檢查 readyState
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => setLanguage(currentLang));
+} else {
+  setLanguage(currentLang);
+}
