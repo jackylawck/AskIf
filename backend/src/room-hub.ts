@@ -1,7 +1,5 @@
 // backend/src/room-hub.ts
-export interface Env {
-  HOST_PASSWORD?: string; // 必須由 wrangler secret 提供，禁止硬編碼預設值
-}
+import { Env } from './types';
 
 interface WsAttachment {
   role: "host" | "audience" | "display";
@@ -65,7 +63,7 @@ export class RoomHub implements DurableObject {
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  // 3. DO 原生鬧鐘：主動清理超時裝死、未認證的 host 連線（防慢速 DoS）
+  // 3. DO 原生鬧鐘：主動清理超時未認證的 host 連線（防慢速 DoS）
   async alarm(): Promise<void> {
     const hosts = this.state.getWebSockets("host");
     const now = Date.now();
@@ -83,7 +81,6 @@ export class RoomHub implements DurableObject {
       }
     }
 
-    // 精確排程：只在下一個最近逾時點喚醒，減少無謂資源消耗
     if (earliestPending !== Infinity) {
       await this.state.storage.setAlarm(earliestPending);
     }
@@ -110,7 +107,7 @@ export class RoomHub implements DurableObject {
       return;
     }
 
-    // 4. 心跳保活回應（不觸發廣播邏輯）
+    // 4. 心跳保活回應
     if (data.type === "PING") {
       try {
         ws.send(JSON.stringify({ type: "PONG" }));
@@ -126,7 +123,7 @@ export class RoomHub implements DurableObject {
       }
 
       if (data.type === "AUTH" && typeof data.password === "string") {
-        if (timingSafeEqual(data.password, this.env.HOST_PASSWORD!)) {
+        if (timingSafeEqual(data.password, this.env.HOST_PASSWORD)) {
           attachment.authed = true;
           ws.serializeAttachment(attachment); // 跨 Hibernation 持久化狀態
           ws.send(JSON.stringify({ type: "AUTH_SUCCESS" }));
@@ -137,11 +134,12 @@ export class RoomHub implements DurableObject {
       return;
     }
 
-    // 6. 業務安全路由轉發
+    // 6. 業務安全路由轉發（嚴格對齊 PROTOCOL.md v1.1.0）
     switch (data.type) {
+      case "REQ_SYNC":
       case "SUBMIT_QUESTION":
       case "UPVOTE": {
-        // 觀眾提問/附議：嚴格只定向發送給 authed: true 的主持人
+        // 上行訊息：只定向轉發給 authed: true 的主持人
         const hosts = this.state.getWebSockets("host");
         const payload = JSON.stringify(data);
         for (const host of hosts) {
@@ -158,9 +156,8 @@ export class RoomHub implements DurableObject {
       }
 
       case "SPOTLIGHT":
-      case "APPROVE_QUESTION":
       case "SYNC_POOL": {
-        // 廣播命令：嚴格限制只有通過認證的 host 才能下達
+        // 下行廣播：嚴格限制只有通過認證的主持人能下達
         if (attachment.role !== "host" || !attachment.authed) {
           ws.close(1008, "Forbidden Broadcast");
           return;
