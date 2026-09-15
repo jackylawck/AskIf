@@ -1,10 +1,25 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="index_title">AskIf 現場問 — 即時問答</title>
   <link rel="stylesheet" href="./css/style.css">
+  <style>
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6);
+      display: none; align-items: center; justify-content: center; z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background: #ffffff; padding: 1.5rem; border-radius: 12px;
+      width: 90%; max-width: 360px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+    }
+    .modal-actions {
+      display: flex; gap: 0.75rem; margin-top: 1.25rem; justify-content: flex-end;
+    }
+  </style>
 </head>
 <body>
   <div style="display:flex; justify-content:flex-end; padding: 0.5rem 1rem;">
@@ -19,27 +34,155 @@
   <div class="card">
     <h3 data-i18n="host_role_title">🎤 培訓師 / 主持人</h3>
     <p style="margin-bottom:1rem;" data-i18n="host_role_desc">建立本地權威房間，由你這部設備直接擔任唯一真實來源。</p>
-    <button class="btn btn-primary" style="width:100%;" onclick="createRoom()" data-i18n="btn_create_room">🚀 建立活動房間</button>
+    <button id="btn-open-create-modal" class="btn btn-primary" style="width:100%;" onclick="openPasswordModal()" data-i18n="btn_create_room">🚀 建立活動房間</button>
   </div>
 
   <div class="card" style="margin-top:1.5rem;">
     <h3 data-i18n="audience_join_title">📱 參與者加入</h3>
-    <p data-i18n="audience_join_desc">輸入主持人提供的 6 位數房號直接加入：</p>
-    <input type="text" id="join-room-id" data-i18n-placeholder="input_room_placeholder" placeholder="例如: 888888" maxlength="10">
+    <p style="margin-bottom:0.75rem;" data-i18n="audience_join_desc">請優先掃描大螢幕 QR Code；或貼上專屬受邀連結 / 完整票據：</p>
+    <input type="text" id="join-room-input" placeholder="貼上票據或完整網址..." style="width:100%; margin-bottom:0.75rem;">
     <button class="btn" style="width:100%;" onclick="joinRoom()" data-i18n="btn_join_room">進入提問室</button>
   </div>
 
-  <script src="./js/i18n.js"></script>
+  <!-- 主持人密碼輸入遮蔽 Modal（以 Form 包覆以支援原生 Enter 提交與密碼管理工具） -->
+  <div id="pwd-modal" class="modal-overlay">
+    <div class="modal-card">
+      <form id="pwd-form" onsubmit="handleFormSubmit(event)">
+        <h3 style="margin-bottom:0.5rem;" data-i18n="input_pwd_prompt">請輸入主持人管理密碼：</h3>
+        <input type="password" id="host-pwd-input" placeholder="••••••••" style="width:100%; margin-top:0.5rem;" autocomplete="current-password">
+        <div class="modal-actions">
+          <button type="button" class="btn" onclick="closePasswordModal()" data-i18n="btn_cancel">取消</button>
+          <button type="submit" id="btn-create-submit" class="btn btn-primary" data-i18n="btn_confirm_create">確認開房</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="./js/config.js"></script>
+  <script type="module" src="./js/i18n.js"></script>
+
   <script>
-    function createRoom() {
-      const roomId = Math.floor(100000 + Math.random() * 900000).toString();
-      window.location.href = `./host.html?room=${roomId}`;
+    function showToast(msg, type = 'info') {
+      let toast = document.getElementById('app-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'app-toast';
+        toast.style.cssText = `
+          position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+          padding: 10px 18px; border-radius: 8px; color: #fff; font-size: 14px;
+          z-index: 9999; transition: opacity 0.3s ease; pointer-events: none;
+        `;
+        document.body.appendChild(toast);
+      }
+      toast.style.background = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6';
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+    }
+
+    function openPasswordModal() {
+      const modal = document.getElementById('pwd-modal');
+      const input = document.getElementById('host-pwd-input');
+      if (modal && input) {
+        input.value = '';
+        modal.classList.add('active');
+        input.focus();
+      }
+    }
+
+    function closePasswordModal() {
+      const modal = document.getElementById('pwd-modal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    // 點擊 Modal 外部遮罩關閉
+    document.getElementById('pwd-modal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'pwd-modal') closePasswordModal();
+    });
+
+    // 按下 ESC 鍵關閉 Modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closePasswordModal();
+    });
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      submitCreateRoom();
+    }
+
+    async function submitCreateRoom() {
+      const pwdInput = document.getElementById('host-pwd-input');
+      const password = pwdInput ? pwdInput.value.trim() : '';
+      if (!password) {
+        showToast(window.t ? window.t('pwd_empty') : '請輸入密碼', 'error');
+        return;
+      }
+
+      const submitBtn = document.getElementById('btn-create-submit');
+      if (submitBtn) submitBtn.disabled = true;
+
+      try {
+        if (!window.ASKIF_RELAY) {
+          throw new Error('未配置伺服器端點');
+        }
+
+        const res = await fetch(`${window.ASKIF_RELAY}/api/create-room`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            showToast(window.t ? window.t('pwd_error') : '密碼錯誤！', 'error');
+          } else if (res.status === 429) {
+            showToast('請求過於頻繁，請稍後再試！', 'error');
+          } else {
+            showToast(`開房失敗 (狀態碼: ${res.status})`, 'error');
+          }
+          return;
+        }
+
+        const data = await res.json();
+        if (!data.ticket) {
+          throw new Error('未回傳合法的 Ticket');
+        }
+
+        sessionStorage.setItem('askif_pwd', password);
+        closePasswordModal();
+        window.location.href = `./host.html?room=${encodeURIComponent(data.ticket)}`;
+      } catch (err) {
+        console.error('[CreateRoom Error]', err);
+        showToast(`連線失敗：${err.message}`, 'error');
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
     }
 
     function joinRoom() {
-      const id = document.getElementById('join-room-id').value.trim();
-      if (!id) return alert(t('alert_no_room'));
-      window.location.href = `./audience.html?room=${id}`;
+      const rawInput = document.getElementById('join-room-input').value.trim();
+      if (!rawInput) {
+        showToast('請輸入受邀票據或網址！', 'error');
+        return;
+      }
+
+      let ticket = rawInput;
+
+      if (rawInput.includes('?')) {
+        try {
+          const urlObj = new URL(rawInput, window.location.origin);
+          ticket = urlObj.searchParams.get('room') || rawInput;
+        } catch {}
+      }
+
+      const parts = ticket.split('.');
+      if (parts.length === 3 && /^\d{6}$/.test(parts[0])) {
+        window.location.href = `./audience.html?room=${encodeURIComponent(ticket)}`;
+      } else {
+        showToast('基於安全驗證，系統不支援純數字。請直接掃描現場 QR Code！', 'error');
+      }
     }
   </script>
 </body>
