@@ -1,6 +1,6 @@
 // backend/src/room-hub.ts
 export interface Env {
-  HOST_PASSWORD?: string; // 必須由 wrangler secret 提供
+  HOST_PASSWORD?: string; // 必須由 wrangler secret 提供，禁止硬編碼預設值
 }
 
 interface WsAttachment {
@@ -9,7 +9,7 @@ interface WsAttachment {
   connectedAt: number;
 }
 
-// 時序安全字串比對 (Constant-time comparison)
+// 常數時間字串比較，防禦時序側通道攻擊
 function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let result = 0;
@@ -35,9 +35,9 @@ export class RoomHub implements DurableObject {
 
     const url = new URL(request.url);
     const requestedRole = (url.searchParams.get("role") ?? "audience").toLowerCase();
-
-    const role: WsAttachment["role"] =
-      requestedRole === "host" ? "host" :
+    
+    const role: WsAttachment["role"] = 
+      requestedRole === "host" ? "host" : 
       requestedRole === "display" ? "display" : "audience";
 
     const pair = new WebSocketPair();
@@ -46,15 +46,15 @@ export class RoomHub implements DurableObject {
     const isHost = role === "host";
     const initialData: WsAttachment = {
       role,
-      authed: !isHost,
+      authed: !isHost, // 觀眾與大螢幕免認證；主持人初始未認證
       connectedAt: Date.now()
     };
 
-    // 握手標籤固定，不進行二次標記
+    // 握手標籤固定，不進行二次 acceptWebSocket
     this.state.acceptWebSocket(server, [role]);
     server.serializeAttachment(initialData);
 
-    // 2. 主動超時防禦：若有主持人連線進入，排程 5 秒後的 Alarm
+    // 2. 主動超時防禦：若有主持人連線進入，排程 5 秒後的 Alarm 主動稽核
     if (isHost) {
       const currentAlarm = await this.state.storage.getAlarm();
       if (currentAlarm === null) {
@@ -65,7 +65,7 @@ export class RoomHub implements DurableObject {
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  // 3. DO 原生鬧鐘：精確排程主動清理逾時連線（防慢速 DoS）
+  // 3. DO 原生鬧鐘：主動清理超時裝死、未認證的 host 連線（防慢速 DoS）
   async alarm(): Promise<void> {
     const hosts = this.state.getWebSockets("host");
     const now = Date.now();
@@ -83,14 +83,14 @@ export class RoomHub implements DurableObject {
       }
     }
 
-    // 精確排程：只在下一個最近逾時點喚醒，減少無謂喚醒
+    // 精確排程：只在下一個最近逾時點喚醒，減少無謂資源消耗
     if (earliestPending !== Infinity) {
       await this.state.storage.setAlarm(earliestPending);
     }
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    // 尺寸限制 (4KB)
+    // 尺寸限制防禦 (4KB)
     if (typeof message === "string" && message.length > 4096) {
       ws.close(1009, "Payload too large");
       return;
@@ -110,7 +110,15 @@ export class RoomHub implements DurableObject {
       return;
     }
 
-    // 4. 第一幀握手認證（針對 host）
+    // 4. 心跳保活回應（不觸發廣播邏輯）
+    if (data.type === "PING") {
+      try {
+        ws.send(JSON.stringify({ type: "PONG" }));
+      } catch {}
+      return;
+    }
+
+    // 5. 第一幀握手認證（僅針對 host）
     if (attachment.role === "host" && !attachment.authed) {
       if (Date.now() - attachment.connectedAt > 5000) {
         ws.close(1008, "Authentication Timeout");
@@ -120,7 +128,7 @@ export class RoomHub implements DurableObject {
       if (data.type === "AUTH" && typeof data.password === "string") {
         if (timingSafeEqual(data.password, this.env.HOST_PASSWORD!)) {
           attachment.authed = true;
-          ws.serializeAttachment(attachment);
+          ws.serializeAttachment(attachment); // 跨 Hibernation 持久化狀態
           ws.send(JSON.stringify({ type: "AUTH_SUCCESS" }));
           return;
         }
@@ -129,18 +137,18 @@ export class RoomHub implements DurableObject {
       return;
     }
 
-    // 5. 業務安全路由轉發
+    // 6. 業務安全路由轉發
     switch (data.type) {
       case "SUBMIT_QUESTION":
       case "UPVOTE": {
-        // 觀眾提問/附議：嚴格只發給 authed: true 的主持人
+        // 觀眾提問/附議：嚴格只定向發送給 authed: true 的主持人
         const hosts = this.state.getWebSockets("host");
         const payload = JSON.stringify(data);
         for (const host of hosts) {
           const att = host.deserializeAttachment() as WsAttachment;
           if (att?.authed) {
-            try {
-              host.send(payload);
+            try { 
+              host.send(payload); 
             } catch (err) {
               console.error("[DO] Send to host failed:", err);
             }
@@ -152,7 +160,7 @@ export class RoomHub implements DurableObject {
       case "SPOTLIGHT":
       case "APPROVE_QUESTION":
       case "SYNC_POOL": {
-        // 廣播命令：嚴格限制只有通過認證的 host 可以發出
+        // 廣播命令：嚴格限制只有通過認證的 host 才能下達
         if (attachment.role !== "host" || !attachment.authed) {
           ws.close(1008, "Forbidden Broadcast");
           return;
@@ -164,8 +172,8 @@ export class RoomHub implements DurableObject {
         ];
         const payload = JSON.stringify(data);
         for (const target of targets) {
-          try {
-            target.send(payload);
+          try { 
+            target.send(payload); 
           } catch (err) {
             console.error("[DO] Broadcast send failed:", err);
           }
