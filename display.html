@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
   <title data-i18n="display_title">AskIf — 現場大螢幕</title>
@@ -22,37 +22,51 @@
     @keyframes zoomIn { from { transform: scale(0.92); opacity:0; } to { transform: scale(1); opacity:1; } }
     .spot-text { font-size: clamp(2.5rem, 6vmin, 6rem); font-weight:700; line-height:1.35; word-break:break-word; }
     .spot-meta { margin-top:3vmin; font-size: clamp(1.2rem, 2.5vmin, 2.5rem); color:#4a9eff; font-weight:700; }
-    #mini-qr { position:fixed; bottom:3vmin; right:3vmin; display:none; background:#fff; padding:8px; border-radius:8px; }
+    #mini-qr { position:fixed; bottom:3vmin; right:3vmin; display:none; background:#fff; padding:8px; border-radius:8px; width:120px; height:120px; }
     
-    /* 懸浮極簡語言切換鍵 */
     .lang-float {
       position:fixed; top:2vmin; right:2vmin; opacity:0.25; transition:opacity 0.2s;
       background:#282c35; border:1px solid #4a9eff; color:#fff;
       padding:4px 10px; border-radius:6px; cursor:pointer; font-size:14px; z-index:100;
     }
     .lang-float:hover { opacity:1; }
+
+    .status-badge {
+      margin-top: 1.5vmin; font-size: 1rem; color: #9aa0a6; font-weight: 500;
+    }
+    .badge-online { color: #10b981; }
+    .badge-danger { color: #ef4444; }
   </style>
 </head>
 <body>
   <button id="lang-toggle" onclick="toggleLanguage()" class="lang-float">EN</button>
+  <div id="error-display"></div>
 
-  <div id="idle-view">
-    <h1 style="font-size:clamp(2rem, 4vmin, 3.5rem); font-weight:700;" data-i18n="display_heading">現場提問與互動</h1>
-    <div class="qr-card" id="main-qr"></div>
-    <p id="room-code-label" style="font-size:clamp(1.2rem, 2.5vmin, 2rem); color:#4a9eff; font-weight:700;">
-      <span data-i18n="room_label">房號</span>：------
-    </p>
-    <p style="color:#9aa0a6; font-size:clamp(1rem, 1.8vmin, 1.5rem); margin-top:1vmin;" data-i18n="display_scan_hint">掃描 QR Code 提交問題 / 附議</p>
-  </div>
+  <main>
+    <!-- 待機畫面 -->
+    <section id="idle-view">
+      <h1 style="font-size:clamp(2rem, 4vmin, 3.5rem); font-weight:700;" data-i18n="display_heading">現場提問與互動</h1>
+      <div class="qr-card" id="main-qr"></div>
+      <p id="room-code-label" style="font-size:clamp(1.2rem, 2.5vmin, 2rem); color:#4a9eff; font-weight:700;">
+        <span data-i18n="room_label">房號</span>：<span id="room-code-text">------</span>
+      </p>
+      <p style="color:#9aa0a6; font-size:clamp(1rem, 1.8vmin, 1.5rem); margin-top:1vmin;" data-i18n="display_scan_hint">掃描 QR Code 提交問題 / 附議</p>
+      <div id="display-status-dot" class="status-badge">◌ 連線中</div>
+    </section>
 
-  <div id="spotlight-view">
-    <div class="spot-text" id="spot-text" data-i18n="loading">載入中...</div>
-    <div class="spot-meta" id="spot-upvotes">+0 <span data-i18n="upvote_unit">附議</span></div>
-  </div>
+    <!-- 焦點視圖 -->
+    <section id="spotlight-view">
+      <div class="spot-text" id="spot-text"></div>
+      <div class="spot-meta">
+        ▲ <span id="spot-upvotes-count">0</span> <span data-i18n="upvote_unit">附議</span>
+      </div>
+    </section>
+  </main>
 
+  <!-- 焦點時右下角縮圖 QR Code -->
   <div id="mini-qr"></div>
 
-  <script src="./js/i18n.js"></script>
+  <script type="module" src="./js/i18n.js"></script>
   <script type="module" src="./js/display.js"></script>
 </body>
 </html>
