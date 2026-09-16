@@ -10,3 +10,11 @@ bindings = [
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["RoomHub"]
+
+# Cloudflare 原生全局分佈式限流器（防爆破開房端點）
+[[ratelimits]]
+name = "AUTH_RATE_LIMITER"
+namespace_id = "1001"
+[ratelimits.simple]
+limit = 10
+period = 60
