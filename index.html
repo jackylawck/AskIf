@@ -1,41 +1,208 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AskIf 現場問 — 零事故即時問答</title>
-  <link rel="stylesheet" href="./css/style.css">
+  <title>AskIf - 即時現場提問系統</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* 密碼彈窗樣式 */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      backdrop-filter: blur(4px);
+    }
+    .modal-box {
+      background: #1e293b;
+      padding: 24px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 380px;
+      border: 1px solid #334155;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .modal-box h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 1.25rem;
+      color: #f8fafc;
+    }
+    .modal-box input {
+      width: 100%;
+      padding: 12px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 1rem;
+      box-sizing: border-box;
+      margin-bottom: 16px;
+    }
+    .modal-box input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .btn-cancel {
+      background: #334155;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn-confirm {
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-confirm:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .error-msg {
+      color: #ef4444;
+      font-size: 0.875rem;
+      margin-top: -10px;
+      margin-bottom: 12px;
+    }
+  </style>
 </head>
 <body>
-  <div style="text-align:center; padding: 2rem 0;">
-    <h1>AskIf 現場問</h1>
-    <p style="margin-top:0.5rem;">無狀態中繼 · 物理級私隱 · 關閉分頁即物理銷毀</p>
+  <div class="container">
+    <header style="text-align: center; margin-top: 40px;">
+      <h1>AskIf 現場問</h1>
+      <p style="color: #94a3b8;">極速、高私隱、純記憶體運作的互動提問平台</p>
+    </header>
+
+    <main style="max-width: 420px; margin: 40px auto; display: flex; flex-direction: column; gap: 24px;">
+      <!-- 主持人入口 -->
+      <div style="background: #1e293b; padding: 24px; border-radius: 12px; border: 1px solid #334155;">
+        <h2 style="font-size: 1.2rem; margin-top: 0;">🎤 主辦人 / 主持人</h2>
+        <p style="color: #94a3b8; font-size: 0.9rem;">建立全新活動房間，即時審核問題與控制大螢幕投影。</p>
+        <button id="btnOpenModal" class="btn-confirm" style="width: 100%; padding: 12px; font-size: 1rem;">
+          🚀 建立活動房間
+        </button>
+      </div>
+
+      <!-- 觀眾入口 -->
+      <div style="background: #1e293b; padding: 24px; border-radius: 12px; border: 1px solid #334155;">
+        <h2 style="font-size: 1.2rem; margin-top: 0;">📱 參與者提問</h2>
+        <p style="color: #94a3b8; font-size: 0.9rem;">輸入 6 位數字活動房號加入討論。</p>
+        <form id="joinForm" style="display: flex; flex-direction: column; gap: 12px;">
+          <input type="text" id="joinRoomId" placeholder="例如：123456" maxlength="6" pattern="[0-9]{6}" required
+                 style="padding: 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 1rem; text-align: center; letter-spacing: 2px;">
+          <button type="submit" class="btn-cancel" style="padding: 12px; font-size: 1rem;">進入房間</button>
+        </form>
+      </div>
+    </main>
   </div>
 
-  <div class="card">
-    <h3>🎤 培訓師 / 主持人</h3>
-    <p style="margin-bottom:1rem;">建立本地權威房間，由你這部設備直接擔任唯一真實來源。</p>
-    <button class="btn btn-primary" style="width:100%;" onclick="createRoom()">🚀 建立活動房間</button>
+  <!-- 密碼輸入彈窗 -->
+  <div id="passwordModal" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+      <h3>🔑 輸入主辦人開房密碼</h3>
+      <input type="password" id="modalPasswordInput" placeholder="請輸入密碼" autocomplete="current-password">
+      <div id="modalError" class="error-msg" style="display: none;"></div>
+      <div class="modal-actions">
+        <button type="button" id="btnModalCancel" class="btn-cancel">取消</button>
+        <button type="button" id="btnModalSubmit" class="btn-confirm">確認開房</button>
+      </div>
+    </div>
   </div>
 
-  <div class="card" style="margin-top:1.5rem;">
-    <h3>📱 參與者加入</h3>
-    <p>輸入主持人提供的 6 位數房號直接加入：</p>
-    <input type="text" id="join-room-id" placeholder="例如: 888888" maxlength="10">
-    <button class="btn" style="width:100%;" onclick="joinRoom()">進入提問室</button>
-  </div>
+  <script type="module">
+    import { CONFIG } from './js/config.js';
 
-  <script>
-    function createRoom() {
-      const roomId = Math.floor(100000 + Math.random() * 900000).toString();
-      window.location.href = `./host.html?room=${roomId}`;
+    const modal = document.getElementById('passwordModal');
+    const openBtn = document.getElementById('btnOpenModal');
+    const cancelBtn = document.getElementById('btnModalCancel');
+    const submitBtn = document.getElementById('btnModalSubmit');
+    const passwordInput = document.getElementById('modalPasswordInput');
+    const errorDisplay = document.getElementById('modalError');
+
+    // 開關彈窗
+    openBtn.addEventListener('click', () => {
+      modal.style.display = 'flex';
+      passwordInput.value = '';
+      errorDisplay.style.display = 'none';
+      passwordInput.focus();
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+
+    // 處理開房 API 呼叫
+    async function handleCreateRoom() {
+      const password = passwordInput.value.trim();
+      if (!password) {
+        showError('請輸入開房密碼');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '開房中...';
+      errorDisplay.style.display = 'none';
+
+      try {
+        const response = await fetch(`${CONFIG.RELAY_HTTP_URL}/api/create-room`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) throw new Error('密碼錯誤，請重新輸入');
+          if (response.status === 429) throw new Error('請求太頻繁，請稍後再試');
+          throw new Error(`伺服器錯誤 (${response.status})`);
+        }
+
+        const data = await response.json();
+        if (data.ticket) {
+          window.location.href = `host.html?room=${data.ticket}`;
+        } else {
+          throw new Error('回傳憑證無效');
+        }
+      } catch (err) {
+        showError(err.message || '連線失敗，請檢查網路');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '確認開房';
+      }
     }
 
-    function joinRoom() {
-      const id = document.getElementById('join-room-id').value.trim();
-      if (!id) return alert('請輸入房號');
-      window.location.href = `./audience.html?room=${id}`;
+    function showError(msg) {
+      errorDisplay.textContent = msg;
+      errorDisplay.style.display = 'block';
     }
+
+    submitBtn.addEventListener('click', handleCreateRoom);
+    passwordInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleCreateRoom();
+    });
+
+    // 觀眾加入房號
+    document.getElementById('joinForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const roomId = document.getElementById('joinRoomId').value.trim();
+      if (/^\d{6}$/.test(roomId)) {
+        window.location.href = `audience.html?room=${roomId}`;
+      }
+    });
   </script>
 </body>
 </html>
