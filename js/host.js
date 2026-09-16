@@ -16,15 +16,43 @@ if (typeof qrcode === 'function') {
   qr.addData(audienceUrl);
   qr.make();
   const hostQrBox = document.getElementById('host-qr');
-  hostQrBox.replaceChildren();
-  const img = document.createElement('img');
-  img.src = qr.createDataURL(3, 6);
-  img.alt = 'QR Code';
-  hostQrBox.appendChild(img);
+  if (hostQrBox) {
+    hostQrBox.replaceChildren();
+    const img = document.createElement('img');
+    img.src = qr.createDataURL(3, 6);
+    img.alt = 'QR Code';
+    hostQrBox.appendChild(img);
+  }
 }
 
 // 3. 連線時傳入 rawTicket，後端 Worker 才能通過 verifyRoomTicket 檢查
 const relay = new Relay(rawTicket, 'HOST');
+
+// 統一連線狀態顯示更新器
+function updateConnectionStatus(isOnline) {
+  const badges = [
+    document.getElementById('sync-badge'),
+    document.getElementById('status-badge'),
+    document.querySelector('.status-badge'),
+    document.querySelector('.badge-danger'),
+    document.querySelector('.badge-success'),
+    document.querySelector('[data-status]')
+  ].filter(Boolean);
+
+  badges.forEach((el) => {
+    if (isOnline) {
+      el.textContent = '🟢 ● 已同步雲端中繼';
+      el.style.color = '#00b894';
+      el.classList.remove('badge-danger');
+      el.classList.add('badge-success');
+    } else {
+      el.textContent = '🔴 ○ 斷線重試中...';
+      el.style.color = '#ff7675';
+      el.classList.remove('badge-success');
+      el.classList.add('badge-danger');
+    }
+  });
+}
 
 // 權威狀態樹
 const state = {
@@ -65,18 +93,13 @@ const MAX_PENDING = 100;
 let lastBroadcastHash = '';
 let pendingSyncTimer = null;
 
+// 監聽 Relay 訊息
 relay.onMessage((msg) => {
   if (msg.type === 'STATUS') {
-    const badge = document.getElementById('sync-badge');
-    if (badge) {
-      if (msg.status === 'ONLINE') {
-        badge.textContent = '● 已同步雲端中繼';
-        badge.style.color = '#00b894';
-        broadcastState(true);
-      } else {
-        badge.textContent = '○ 斷線重試中...';
-        badge.style.color = '#ff7675';
-      }
+    const isOnline = (msg.status === 'ONLINE');
+    updateConnectionStatus(isOnline);
+    if (isOnline) {
+      broadcastState(true);
     }
     return;
   }
@@ -177,155 +200,161 @@ function broadcastState(force = false) {
 }
 
 function render() {
-  document.getElementById('inbox-count').textContent = state.pending.size;
-  document.getElementById('approved-count').textContent = state.approved.size;
+  const inboxCountEl = document.getElementById('inbox-count');
+  const approvedCountEl = document.getElementById('approved-count');
+  if (inboxCountEl) inboxCountEl.textContent = state.pending.size;
+  if (approvedCountEl) approvedCountEl.textContent = state.approved.size;
 
   // 1. 待審隊列 (純 DOM API)
   const inboxEl = document.getElementById('inbox-list');
-  inboxEl.replaceChildren();
+  if (inboxEl) {
+    inboxEl.replaceChildren();
 
-  state.pending.forEach((q) => {
-    const card = document.createElement('div');
-    card.className = 'card';
+    state.pending.forEach((q) => {
+      const card = document.createElement('div');
+      card.className = 'card';
 
-    const textEl = document.createElement('div');
-    textEl.style.cssText = 'font-size:1.05rem; font-weight:600; margin-bottom:0.5rem; word-break:break-word;';
-    textEl.textContent = q.text;
+      const textEl = document.createElement('div');
+      textEl.style.cssText = 'font-size:1.05rem; font-weight:600; margin-bottom:0.5rem; word-break:break-word;';
+      textEl.textContent = q.text;
 
-    const btnGroup = document.createElement('div');
-    btnGroup.style.display = 'flex';
-    btnGroup.style.gap = '0.5rem';
+      const btnGroup = document.createElement('div');
+      btnGroup.style.display = 'flex';
+      btnGroup.style.gap = '0.5rem';
 
-    const passBtn = document.createElement('button');
-    passBtn.className = 'btn btn-success';
-    passBtn.style.cssText = 'padding:0.4rem 0.8rem; font-size:0.8rem;';
-    passBtn.textContent = '✅ 通過';
-    passBtn.onclick = () => {
-      state.pending.delete(q.qid);
-      state.approved.set(q.qid, { ...q, upvotedCids: new Set([q.cid]) });
-      render();
-      broadcastState();
-    };
+      const passBtn = document.createElement('button');
+      passBtn.className = 'btn btn-success';
+      passBtn.style.cssText = 'padding:0.4rem 0.8rem; font-size:0.8rem;';
+      passBtn.textContent = '✅ 通過';
+      passBtn.onclick = () => {
+        state.pending.delete(q.qid);
+        state.approved.set(q.qid, { ...q, upvotedCids: new Set([q.cid]) });
+        render();
+        broadcastState();
+      };
 
-    const rejectBtn = document.createElement('button');
-    rejectBtn.className = 'btn btn-danger';
-    rejectBtn.style.cssText = 'padding:0.4rem 0.8rem; font-size:0.8rem;';
-    rejectBtn.textContent = '❌ 駁回';
-    rejectBtn.onclick = () => {
-      state.pending.delete(q.qid);
-      render();
-      saveToSession();
-    };
+      const rejectBtn = document.createElement('button');
+      rejectBtn.className = 'btn btn-danger';
+      rejectBtn.style.cssText = 'padding:0.4rem 0.8rem; font-size:0.8rem;';
+      rejectBtn.textContent = '❌ 駁回';
+      rejectBtn.onclick = () => {
+        state.pending.delete(q.qid);
+        render();
+        saveToSession();
+      };
 
-    btnGroup.appendChild(passBtn);
-    btnGroup.appendChild(rejectBtn);
-    card.appendChild(textEl);
-    card.appendChild(btnGroup);
-    inboxEl.appendChild(card);
-  });
+      btnGroup.appendChild(passBtn);
+      btnGroup.appendChild(rejectBtn);
+      card.appendChild(textEl);
+      card.appendChild(btnGroup);
+      inboxEl.appendChild(card);
+    });
+  }
 
   // 2. 候選池渲染（0.8s 視覺進度條長按）
   const approvedEl = document.getElementById('approved-list');
-  approvedEl.replaceChildren();
-  const sorted = Array.from(state.approved.values()).sort((a, b) => b.upvotes - a.upvotes);
+  if (approvedEl) {
+    approvedEl.replaceChildren();
+    const sorted = Array.from(state.approved.values()).sort((a, b) => b.upvotes - a.upvotes);
 
-  sorted.forEach((q) => {
-    const isSpot = state.spotlight?.qid === q.qid;
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.style.border = isSpot ? '2px solid #ff4757' : '1px solid #282c35';
+    sorted.forEach((q) => {
+      const isSpot = state.spotlight?.qid === q.qid;
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.border = isSpot ? '2px solid #ff4757' : '1px solid #282c35';
 
-    const headerRow = document.createElement('div');
-    headerRow.style.cssText = 'display:flex; justify-content:space-between; margin-bottom:0.4rem;';
+      const headerRow = document.createElement('div');
+      headerRow.style.cssText = 'display:flex; justify-content:space-between; margin-bottom:0.4rem;';
 
-    const upvoteSpan = document.createElement('span');
-    upvoteSpan.style.cssText = 'font-weight:700; color:#4a9eff;';
-    upvoteSpan.textContent = `▲ +${q.upvotes} 附議`;
-    headerRow.appendChild(upvoteSpan);
+      const upvoteSpan = document.createElement('span');
+      upvoteSpan.style.cssText = 'font-weight:700; color:#4a9eff;';
+      upvoteSpan.textContent = `▲ +${q.upvotes} 附議`;
+      headerRow.appendChild(upvoteSpan);
 
-    if (isSpot) {
-      const spotBadge = document.createElement('span');
-      spotBadge.className = 'badge';
-      spotBadge.style.cssText = 'background:#ff4757; color:#fff;';
-      spotBadge.textContent = '大螢幕播放中';
-      headerRow.appendChild(spotBadge);
-    }
-    card.appendChild(headerRow);
+      if (isSpot) {
+        const spotBadge = document.createElement('span');
+        spotBadge.className = 'badge';
+        spotBadge.style.cssText = 'background:#ff4757; color:#fff;';
+        spotBadge.textContent = '大螢幕播放中';
+        headerRow.appendChild(spotBadge);
+      }
+      card.appendChild(headerRow);
 
-    const contentEl = document.createElement('div');
-    contentEl.style.cssText = 'font-size:1.1rem; font-weight:600; margin-bottom:0.75rem; word-break:break-word;';
-    contentEl.textContent = q.text;
-    card.appendChild(contentEl);
+      const contentEl = document.createElement('div');
+      contentEl.style.cssText = 'font-size:1.1rem; font-weight:600; margin-bottom:0.75rem; word-break:break-word;';
+      contentEl.textContent = q.text;
+      card.appendChild(contentEl);
 
-    const actionGrid = document.createElement('div');
-    actionGrid.style.cssText = 'display:grid; grid-template-columns: 2fr 1fr; gap:0.5rem;';
+      const actionGrid = document.createElement('div');
+      actionGrid.style.cssText = 'display:grid; grid-template-columns: 2fr 1fr; gap:0.5rem;';
 
-    const pushBtn = document.createElement('button');
-    pushBtn.className = `btn ${isSpot ? 'btn-danger' : 'btn-primary'}`;
-    pushBtn.style.position = 'relative';
-    pushBtn.style.overflow = 'hidden';
+      const pushBtn = document.createElement('button');
+      pushBtn.className = `btn ${isSpot ? 'btn-danger' : 'btn-primary'}`;
+      pushBtn.style.position = 'relative';
+      pushBtn.style.overflow = 'hidden';
 
-    const labelSpan = document.createElement('span');
-    labelSpan.style.position = 'relative';
-    labelSpan.style.zIndex = '2';
-    labelSpan.textContent = isSpot ? '⏹️ 長按撤下大螢幕' : '🚀 長按推上大螢幕';
+      const labelSpan = document.createElement('span');
+      labelSpan.style.position = 'relative';
+      labelSpan.style.zIndex = '2';
+      labelSpan.textContent = isSpot ? '⏹️ 長按撤下大螢幕' : '🚀 長按推上大螢幕';
 
-    const progressBar = document.createElement('div');
-    progressBar.style.cssText = `
-      position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
-      background: rgba(255, 255, 255, 0.35); z-index: 1; pointer-events: none;
-    `;
+      const progressBar = document.createElement('div');
+      progressBar.style.cssText = `
+        position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
+        background: rgba(255, 255, 255, 0.35); z-index: 1; pointer-events: none;
+      `;
 
-    pushBtn.appendChild(labelSpan);
-    pushBtn.appendChild(progressBar);
+      pushBtn.appendChild(labelSpan);
+      pushBtn.appendChild(progressBar);
 
-    let pressTimer = null;
-    const startPress = (e) => {
-      e.preventDefault();
-      progressBar.style.transition = 'width 0.8s linear';
-      progressBar.style.width = '100%';
+      let pressTimer = null;
+      const startPress = (e) => {
+        e.preventDefault();
+        progressBar.style.transition = 'width 0.8s linear';
+        progressBar.style.width = '100%';
 
-      pressTimer = setTimeout(() => {
-        if (state.spotlight?.qid === q.qid) {
-          state.spotlight = null;
-        } else {
-          state.spotlight = { qid: q.qid, text: q.text, upvotes: q.upvotes };
+        pressTimer = setTimeout(() => {
+          if (state.spotlight?.qid === q.qid) {
+            state.spotlight = null;
+          } else {
+            state.spotlight = { qid: q.qid, text: q.text, upvotes: q.upvotes };
+          }
+          render();
+          broadcastState();
+        }, 800);
+      };
+
+      const cancelPress = () => {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
         }
+        progressBar.style.transition = 'none';
+        progressBar.style.width = '0%';
+      };
+
+      pushBtn.addEventListener('pointerdown', startPress);
+      pushBtn.addEventListener('pointerup', cancelPress);
+      pushBtn.addEventListener('pointerleave', cancelPress);
+      pushBtn.addEventListener('pointercancel', cancelPress);
+
+      const dismissBtn = document.createElement('button');
+      dismissBtn.className = 'btn';
+      dismissBtn.style.fontSize = '0.8rem';
+      dismissBtn.textContent = '🗣️ 口頭答完';
+      dismissBtn.onclick = () => {
+        state.approved.delete(q.qid);
+        if (state.spotlight?.qid === q.qid) state.spotlight = null;
         render();
         broadcastState();
-      }, 800);
-    };
+      };
 
-    const cancelPress = () => {
-      if (pressTimer) {
-        clearTimeout(pressTimer);
-        pressTimer = null;
-      }
-      progressBar.style.transition = 'none';
-      progressBar.style.width = '0%';
-    };
-
-    pushBtn.addEventListener('pointerdown', startPress);
-    pushBtn.addEventListener('pointerup', cancelPress);
-    pushBtn.addEventListener('pointerleave', cancelPress);
-    pushBtn.addEventListener('pointercancel', cancelPress);
-
-    const dismissBtn = document.createElement('button');
-    dismissBtn.className = 'btn';
-    dismissBtn.style.fontSize = '0.8rem';
-    dismissBtn.textContent = '🗣️ 口頭答完';
-    dismissBtn.onclick = () => {
-      state.approved.delete(q.qid);
-      if (state.spotlight?.qid === q.qid) state.spotlight = null;
-      render();
-      broadcastState();
-    };
-
-    actionGrid.appendChild(pushBtn);
-    actionGrid.appendChild(dismissBtn);
-    card.appendChild(actionGrid);
-    approvedEl.appendChild(card);
-  });
+      actionGrid.appendChild(pushBtn);
+      actionGrid.appendChild(dismissBtn);
+      card.appendChild(actionGrid);
+      approvedEl.appendChild(card);
+    });
+  }
 }
 
 render();
