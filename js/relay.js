@@ -9,7 +9,8 @@ export class Relay {
   }
 
   connect() {
-    const baseHost = window.ASKIF_RELAY || 'askif-relay.YOUR-SUBDOMAIN.workers.dev';
+    // 填入你實際部署的 Cloudflare Worker 域名
+    const baseHost = 'askif-relay.jackylawck.workers.dev';
     const cleanHost = baseHost.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '');
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const url = `${protocol}//${cleanHost}/room?room=${encodeURIComponent(this.roomId)}&role=${this.role}`;
