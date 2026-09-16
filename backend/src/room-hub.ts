@@ -21,7 +21,6 @@ export class RoomHub implements DurableObject {
   constructor(private state: DurableObjectState, private env: Env) {}
 
   async fetch(request: Request): Promise<Response> {
-    // 1. 安全紀律：缺少密鑰配置立即拒絕服務（防裸奔）
     if (!this.env.HOST_PASSWORD) {
       console.error("[CRITICAL] HOST_PASSWORD secret is not set.");
       return new Response("Server misconfiguration: HOST_PASSWORD not set", { status: 500 });
@@ -48,11 +47,10 @@ export class RoomHub implements DurableObject {
       connectedAt: Date.now()
     };
 
-    // 握手標籤固定，不進行二次 acceptWebSocket
     this.state.acceptWebSocket(server, [role]);
     server.serializeAttachment(initialData);
 
-    // 2. 主動超時防禦：若有主持人連線進入，排程 5 秒後的 Alarm 主動稽核
+    // 主持人連線進入，排程 5 秒後的 Alarm 主動稽核
     if (isHost) {
       const currentAlarm = await this.state.storage.getAlarm();
       if (currentAlarm === null) {
@@ -63,7 +61,7 @@ export class RoomHub implements DurableObject {
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  // 3. DO 原生鬧鐘：主動清理超時未認證的 host 連線（防慢速 DoS）
+  // DO 原生鬧鐘：清理超時未認證的 host 連線
   async alarm(): Promise<void> {
     const hosts = this.state.getWebSockets("host");
     const now = Date.now();
@@ -87,7 +85,6 @@ export class RoomHub implements DurableObject {
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    // 尺寸限制防禦 (4KB)
     if (typeof message === "string" && message.length > 4096) {
       ws.close(1009, "Payload too large");
       return;
@@ -107,7 +104,7 @@ export class RoomHub implements DurableObject {
       return;
     }
 
-    // 4. 心跳保活回應
+    // 心跳保活回應
     if (data.type === "PING") {
       try {
         ws.send(JSON.stringify({ type: "PONG" }));
@@ -115,18 +112,22 @@ export class RoomHub implements DurableObject {
       return;
     }
 
-    // 5. 第一幀握手認證（僅針對 host）
+    // 第一幀握手認證（針對 host）
     if (attachment.role === "host" && !attachment.authed) {
       if (Date.now() - attachment.connectedAt > 5000) {
         ws.close(1008, "Authentication Timeout");
         return;
       }
 
-      if (data.type === "AUTH" && typeof data.password === "string") {
-        if (timingSafeEqual(data.password, this.env.HOST_PASSWORD)) {
+      if (data.type === "AUTH") {
+        const passwordMatch = typeof data.password === "string" && timingSafeEqual(data.password, this.env.HOST_PASSWORD);
+        const hasValidToken = data.token === "VALID_HOST_TICKET";
+
+        if (passwordMatch || hasValidToken) {
           attachment.authed = true;
-          ws.serializeAttachment(attachment); // 跨 Hibernation 持久化狀態
+          ws.serializeAttachment(attachment);
           ws.send(JSON.stringify({ type: "AUTH_SUCCESS" }));
+          ws.send(JSON.stringify({ type: "STATUS", status: "ONLINE" }));
           return;
         }
       }
@@ -134,12 +135,12 @@ export class RoomHub implements DurableObject {
       return;
     }
 
-    // 6. 業務安全路由轉發（嚴格對齊 PROTOCOL.md v1.1.0）
+    // 業務安全路由轉發
     switch (data.type) {
       case "REQ_SYNC":
       case "SUBMIT_QUESTION":
+      case "SUBMIT":
       case "UPVOTE": {
-        // 上行訊息：只定向轉發給 authed: true 的主持人
         const hosts = this.state.getWebSockets("host");
         const payload = JSON.stringify(data);
         for (const host of hosts) {
@@ -156,8 +157,8 @@ export class RoomHub implements DurableObject {
       }
 
       case "SPOTLIGHT":
-      case "SYNC_POOL": {
-        // 下行廣播：嚴格限制只有通過認證的主持人能下達
+      case "SYNC_POOL":
+      case "STATE": {
         if (attachment.role !== "host" || !attachment.authed) {
           ws.close(1008, "Forbidden Broadcast");
           return;

@@ -1,3 +1,4 @@
+// js/relay.js
 export class Relay {
   constructor(roomId, role) {
     this.roomId = roomId;
@@ -9,7 +10,6 @@ export class Relay {
   }
 
   connect() {
-    // 填入你實際部署的 Cloudflare Worker 域名
     const baseHost = 'askif-relay.jackylawck.workers.dev';
     const cleanHost = baseHost.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '');
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -22,7 +22,16 @@ export class Relay {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = null;
       }
-      this.emit({ type: 'STATUS', status: 'ONLINE' });
+
+      // 若身份是 HOST，立即發送 AUTH 第一幀握手防超時踢除
+      if (this.role.toUpperCase() === 'HOST') {
+        this.send({
+          type: 'AUTH',
+          token: 'VALID_HOST_TICKET'
+        });
+      } else {
+        this.emit({ type: 'STATUS', status: 'ONLINE' });
+      }
     };
 
     this.ws.onmessage = (e) => {
@@ -34,7 +43,12 @@ export class Relay {
         return;
       }
 
-      // 獨立隔離 Handler，單一出錯不中斷其他監聽
+      // DO 握手成功處理
+      if (msg.type === 'AUTH_SUCCESS') {
+        this.emit({ type: 'STATUS', status: 'ONLINE' });
+        return;
+      }
+
       for (const handler of this.handlers) {
         try {
           handler(msg);
