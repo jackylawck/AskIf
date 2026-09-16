@@ -1,11 +1,15 @@
 import { Relay } from './relay.js';
 
 const urlParams = new URLSearchParams(window.location.search);
-const roomId = urlParams.get('room') || '888888';
+// 1. 保留原始 Ticket (例如 721612.1789...HPHd) 用於通過後端 WebSocket 驗證
+const rawTicket = urlParams.get('room') || '888888';
+// 2. 拆解出純 6 位數房號供介面與 QR Code 使用
+const roomId = rawTicket.includes('.') ? rawTicket.split('.')[0] : rawTicket;
+
 document.getElementById('room-id-label').textContent = roomId;
 document.getElementById('open-display-btn').href = `./display.html?room=${encodeURIComponent(roomId)}`;
 
-// 產生主持人側加入 QR
+// 產生主持人側加入 QR（只給 6 位純房號，避免觀眾端帶長簽名）
 const audienceUrl = new URL(`./audience.html?room=${encodeURIComponent(roomId)}`, window.location.href).href;
 if (typeof qrcode === 'function') {
   const qr = qrcode(0, 'M');
@@ -19,7 +23,8 @@ if (typeof qrcode === 'function') {
   hostQrBox.appendChild(img);
 }
 
-const relay = new Relay(roomId, 'HOST');
+// 3. 連線時傳入 rawTicket，後端 Worker 才能通過 verifyRoomTicket 檢查
+const relay = new Relay(rawTicket, 'HOST');
 
 // 權威狀態樹
 const state = {
@@ -63,13 +68,15 @@ let pendingSyncTimer = null;
 relay.onMessage((msg) => {
   if (msg.type === 'STATUS') {
     const badge = document.getElementById('sync-badge');
-    if (msg.status === 'ONLINE') {
-      badge.textContent = '● 已同步雲端中繼';
-      badge.style.color = '#00b894';
-      broadcastState(true);
-    } else {
-      badge.textContent = '○ 斷線重試中...';
-      badge.style.color = '#ff7675';
+    if (badge) {
+      if (msg.status === 'ONLINE') {
+        badge.textContent = '● 已同步雲端中繼';
+        badge.style.color = '#00b894';
+        broadcastState(true);
+      } else {
+        badge.textContent = '○ 斷線重試中...';
+        badge.style.color = '#ff7675';
+      }
     }
     return;
   }
