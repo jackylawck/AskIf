@@ -124,8 +124,9 @@
     </div>
   </div>
 
-  <script type="module">
-    import { CONFIG } from './js/config.js';
+  <script>
+    // 直接定義 Worker API 端點，徹底避免 JS 模組 export 衝突
+    const RELAY_HTTP_URL = 'https://askif-relay.jackylawck.workers.dev';
 
     const modal = document.getElementById('passwordModal');
     const openBtn = document.getElementById('btnOpenModal');
@@ -134,7 +135,7 @@
     const passwordInput = document.getElementById('modalPasswordInput');
     const errorDisplay = document.getElementById('modalError');
 
-    // 開關彈窗
+    // 開啟彈窗
     openBtn.addEventListener('click', () => {
       modal.style.display = 'flex';
       passwordInput.value = '';
@@ -142,11 +143,12 @@
       passwordInput.focus();
     });
 
+    // 關閉彈窗
     cancelBtn.addEventListener('click', () => {
       modal.style.display = 'none';
     });
 
-    // 處理開房 API 呼叫
+    // 呼叫開房 API 換取加密 Ticket
     async function handleCreateRoom() {
       const password = passwordInput.value.trim();
       if (!password) {
@@ -159,7 +161,7 @@
       errorDisplay.style.display = 'none';
 
       try {
-        const response = await fetch(`${CONFIG.RELAY_HTTP_URL}/api/create-room`, {
+        const response = await fetch(`${RELAY_HTTP_URL}/api/create-room`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ password })
@@ -195,7 +197,7 @@
       if (e.key === 'Enter') handleCreateRoom();
     });
 
-    // 觀眾加入房號
+    // 參與者提交房號加入
     document.getElementById('joinForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const roomId = document.getElementById('joinRoomId').value.trim();
