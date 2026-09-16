@@ -55,8 +55,8 @@ export default {
     const origin = request.headers.get('Origin') || '';
     const defaultOrigin = 'https://jackylawck.github.io';
 
-    // 1. 白名單比對：支援 localhost 與 jackylawck.github.io
-    const isAllowed = 
+    // 寬容比對允許的來源（支援 GitHub Pages、localhost 與 127.0.0.1）
+    const isAllowed =
       origin === defaultOrigin ||
       origin.startsWith('https://jackylawck.github.io') ||
       origin.includes('localhost') ||
@@ -64,7 +64,7 @@ export default {
 
     const allowOriginHeader = isAllowed && origin ? origin : defaultOrigin;
 
-    // 2. 絕對優先定義完整的 CORS Headers
+    // 定義 CORS 標頭
     const corsHeaders: Record<string, string> = {
       'Access-Control-Allow-Origin': allowOriginHeader,
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -73,13 +73,13 @@ export default {
       'Vary': 'Origin'
     };
 
-    // 3. 處理 OPTIONS 預檢：無條件優先響應 204
+    // 預檢請求一律最優先返回 204
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
     try {
-      // 4. Origin 阻擋
+      // 跨域來源檢查
       if (origin && !isAllowed) {
         return new Response('Forbidden origin', { status: 403, headers: corsHeaders });
       }
@@ -88,9 +88,7 @@ export default {
       const roomSecret = env.ROOM_SECRET || 'askif-default-edge-secret-key-2026';
       const url = new URL(request.url);
 
-      // -------------------------------------------------------------
-      // 端點 A: POST /api/create-room
-      // -------------------------------------------------------------
+      // 端點：POST /api/create-room（開房並簽發 Ticket）
       if (url.pathname === '/api/create-room' && request.method === 'POST') {
         const contentType = request.headers.get('Content-Type') || '';
         if (!contentType.includes('application/json')) {
@@ -115,7 +113,7 @@ export default {
           bodyText += decoder.decode();
         }
 
-        // 限流防護（有綁定才執行）
+        // 限流防護（若有設定 AUTH_RATE_LIMITER 則執行）
         if (env.AUTH_RATE_LIMITER) {
           const clientIp = request.headers.get('CF-Connecting-IP') || 'global';
           const { success } = await env.AUTH_RATE_LIMITER.limit({ key: clientIp });
@@ -150,9 +148,7 @@ export default {
         }
       }
 
-      // -------------------------------------------------------------
-      // 端點 B: WebSocket 升級路由
-      // -------------------------------------------------------------
+      // 端點：WebSocket 升級與房間轉發
       if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
         return new Response('AskIf Relay: Expected WebSocket connection', {
           status: 426,
