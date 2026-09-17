@@ -1,13 +1,17 @@
 import { Relay } from './relay.js';
 import { getSavedLang, TRANSLATIONS } from './i18n.js';
 
+// 🌐 1. 最頂層定義 getDict，絕不出現 not defined
+function getDict() {
+  const lang = getSavedLang();
+  return TRANSLATIONS[lang] || TRANSLATIONS.zh;
+}
+
 const urlParams = new URLSearchParams(window.location.search);
-// 1. 保留原始 Ticket 用於通過後端 WebSocket 驗證
 const rawTicket = urlParams.get('room') || '888888';
-// 2. 拆解出純 6 位數房號供介面與 QR Code 使用
 const roomId = rawTicket.includes('.') ? rawTicket.split('.')[0] : rawTicket;
 
-// 🔑 1. 即焚金鑰安全接收並抹除 Hash，避免截圖外洩
+// 🔑 2. 即焚金鑰安全接收並抹除 Hash
 if (window.location.hash.startsWith('#key=')) {
   const hashKey = decodeURIComponent(window.location.hash.substring(5));
   sessionStorage.setItem(`askif_host_pwd_${roomId}`, hashKey);
@@ -15,13 +19,7 @@ if (window.location.hash.startsWith('#key=')) {
   history.replaceState(null, '', window.location.pathname + window.location.search);
 }
 
-// 🌐 2. 頂層定義 getDict，確保所有按鈕與 UI 函數皆可安全調用
-function getDict() {
-  const lang = getSavedLang();
-  return TRANSLATIONS[lang] || TRANSLATIONS.zh;
-}
-
-// 🛡️ 3. 防禦性綁定與初始化 UI
+// 🛡️ 3. UI 綁定
 function initHostUI() {
   const roomLabel = document.getElementById('room-id-label');
   if (roomLabel) roomLabel.textContent = roomId;
@@ -39,7 +37,7 @@ function initHostUI() {
     };
   }
 
-  // 渲染二維碼
+  // 渲染 QR
   const audienceUrl = new URL(`./audience.html?room=${encodeURIComponent(roomId)}`, window.location.href).href;
   if (typeof qrcode === 'function') {
     const qr = qrcode(0, 'M');
@@ -67,7 +65,6 @@ const relay = new Relay(rawTicket, 'HOST');
 
 let isRelayOnline = false;
 
-// 統一連線狀態顯示更新器
 function updateConnectionStatus(isOnline) {
   isRelayOnline = isOnline;
   const dict = getDict();
@@ -95,7 +92,6 @@ function updateConnectionStatus(isOnline) {
   });
 }
 
-// 權威狀態樹
 const state = {
   version: 0,
   pending: new Map(),
@@ -103,7 +99,6 @@ const state = {
   spotlight: null
 };
 
-// 恢復 sessionStorage 狀態
 const STORAGE_KEY = `askif_host_state_${roomId}`;
 const savedState = sessionStorage.getItem(STORAGE_KEY);
 if (savedState) {
@@ -133,7 +128,6 @@ const MAX_PENDING = 100;
 let lastBroadcastHash = '';
 let pendingSyncTimer = null;
 
-// 監聽 Relay 訊息
 relay.onMessage((msg) => {
   if (msg.type === 'STATUS') {
     const isOnline = (msg.status === 'ONLINE');
@@ -244,7 +238,6 @@ function render() {
   if (inboxCountEl) inboxCountEl.textContent = state.pending.size;
   if (approvedCountEl) approvedCountEl.textContent = state.approved.size;
 
-  // 1. 待審隊列
   const inboxEl = document.getElementById('inbox-list');
   if (inboxEl) {
     inboxEl.replaceChildren();
@@ -290,7 +283,6 @@ function render() {
     });
   }
 
-  // 2. 候選池渲染
   const approvedEl = document.getElementById('approved-list');
   if (approvedEl) {
     approvedEl.replaceChildren();
@@ -396,7 +388,6 @@ function render() {
   }
 }
 
-// 註冊全域供 host.html 切換語言時呼叫
 window.renderHostLists = () => {
   render();
   updateConnectionStatus(isRelayOnline);
