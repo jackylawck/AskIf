@@ -1,7 +1,6 @@
-// js/i18n.js
+cat << 'EOF' > /workspaces/AskIf/js/i18n.js
 export const TRANSLATIONS = {
   zh: {
-    // index.html
     title: '現場即時互動問答',
     subtitle: '純邊緣記憶體運算・無痕私隱防護・會後即時銷毀',
     hostSectionTitle: '🎙️ 主辦人 / 主持人入口',
@@ -22,8 +21,6 @@ export const TRANSLATIONS = {
     errorWrongPwd: '密碼錯誤，請確認後重新輸入',
     errorNet: '連線伺服器失敗，請稍候再試',
     errorInvalidRoom: '請輸入正確的 6 位數字房號',
-
-    // audience.html
     room: '房號',
     connected: '已連線',
     disconnected: '斷線',
@@ -36,7 +33,6 @@ export const TRANSLATIONS = {
     upvoted: '已附議'
   },
   en: {
-    // index.html
     title: 'Real-time Live Q&A',
     subtitle: 'Edge-native memory computing · Zero-PII privacy · Session auto-purge',
     hostSectionTitle: '🎙️ Event Host / Moderator',
@@ -57,8 +53,6 @@ export const TRANSLATIONS = {
     errorWrongPwd: 'Incorrect password. Please try again.',
     errorNet: 'Failed to connect to relay service. Please try again.',
     errorInvalidRoom: 'Please enter a valid 6-digit room code.',
-
-    // audience.html
     room: 'Room',
     connected: 'Connected',
     disconnected: 'Offline',
@@ -99,3 +93,8 @@ export function applyI18n(lang = getSavedLang()) {
 
   return dict;
 }
+EOF
+
+git add js/i18n.js
+git commit -m "feat: add i18n module file"
+git push origin main
