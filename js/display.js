@@ -1,8 +1,14 @@
 import { Relay } from './relay.js';
 
 const urlParams = new URLSearchParams(window.location.search);
-const roomId = urlParams.get('room') || '888888';
-document.getElementById('room-code-label').textContent = `房號：${roomId}`;
+const rawRoom = urlParams.get('room') || '888888';
+// 確保取到純 6 位房號（避免誤帶長票據）
+const roomId = rawRoom.includes('.') ? rawRoom.split('.')[0] : rawRoom;
+
+const labelEl = document.getElementById('room-code-label');
+if (labelEl) {
+  labelEl.textContent = `房號 Room: ${roomId}`;
+}
 
 const audienceUrl = new URL(`./audience.html?room=${encodeURIComponent(roomId)}`, window.location.href).href;
 
@@ -54,8 +60,11 @@ function render(spotlight) {
     spotView.style.display = 'block';
     miniQr.style.display = 'block';
 
-    document.getElementById('spot-text').textContent = spotlight.text;
-    document.getElementById('spot-upvotes').textContent = `▲ +${spotlight.upvotes} 附議`;
+    const textEl = document.getElementById('spot-text');
+    const upvotesEl = document.getElementById('spot-upvotes');
+
+    if (textEl) textEl.textContent = spotlight.text;
+    if (upvotesEl) upvotesEl.textContent = `▲ +${spotlight.upvotes} 附議 / Upvotes`;
   } else {
     idleView.style.display = 'block';
     spotView.style.display = 'none';
