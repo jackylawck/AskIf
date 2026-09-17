@@ -11,14 +11,14 @@
   <link rel="apple-touch-icon" sizes="192x192" href="./AskIf192icon.png">
   <meta name="theme-color" content="#0d0f12">
 
-  <!-- 🛡️ 嚴格 CSP 安全防線 -->
+  <!-- 🛡️ 嚴格 CSP 安全防線 (放行 Worker 連線與 jsdelivr 資源) -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: blob: https://jackylawck.github.io;
     font-src 'self' data:;
-    connect-src 'self' https://askif-relay.jackylawck.workers.dev wss://askif-relay.jackylawck.workers.dev;
+    connect-src 'self' https://askif-relay.jackylawck.workers.dev wss://askif-relay.jackylawck.workers.dev https://cdn.jsdelivr.net;
     object-src 'none';
     base-uri 'self';
     form-action 'none';
