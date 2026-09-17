@@ -1,8 +1,23 @@
 import { Relay } from './relay.js';
+import { getSavedLang, TRANSLATIONS, applyI18n } from './i18n.js';
+
+// 初始化並套用雙語
+let currentLang = getSavedLang();
+applyI18n(currentLang);
+
+function getDict() {
+  return TRANSLATIONS[getSavedLang()] || TRANSLATIONS.zh;
+}
 
 const urlParams = new URLSearchParams(window.location.search);
-const roomId = urlParams.get('room') || '888888';
-document.getElementById('room-id-tag').textContent = `房號：${roomId}`;
+const rawRoom = urlParams.get('room') || '888888';
+// 確保只取 6 位純數字房號
+const roomId = rawRoom.includes('.') ? rawRoom.split('.')[0] : rawRoom;
+
+const roomTagEl = document.getElementById('room-id-tag');
+if (roomTagEl) {
+  roomTagEl.textContent = `${getDict().room || '房號'}: ${roomId}`;
+}
 
 const relay = new Relay(roomId, 'AUDIENCE');
 const myUpvotes = new Set(JSON.parse(sessionStorage.getItem(`askif_votes_${roomId}`) || '[]'));
@@ -11,8 +26,12 @@ let lastVersion = 0;
 relay.onMessage((msg) => {
   if (msg.type === 'STATUS') {
     const dot = document.getElementById('status-dot');
-    dot.className = msg.status === 'ONLINE' ? 'badge badge-online' : 'badge badge-danger';
-    dot.textContent = msg.status === 'ONLINE' ? '● 在線' : '○ 斷線';
+    if (dot) {
+      dot.className = msg.status === 'ONLINE' ? 'badge badge-online' : 'badge badge-danger';
+      dot.textContent = msg.status === 'ONLINE' 
+        ? `● ${getDict().connected || '已連線'}` 
+        : `○ ${getDict().disconnected || '斷線'}`;
+    }
     if (msg.status === 'ONLINE') {
       relay.send({ type: 'REQ_SYNC' });
     }
@@ -30,14 +49,18 @@ const qInput = document.getElementById('question-input');
 const charCount = document.getElementById('char-count');
 if (qInput && charCount) {
   qInput.addEventListener('input', () => {
-    charCount.textContent = `${qInput.value.length}/150`;
+    charCount.textContent = `${qInput.value.length}/200`;
   });
 }
 
 window.submitQuestion = () => {
   if (!qInput) return;
   const text = qInput.value.trim();
-  if (!text) return;
+  const dict = getDict();
+  if (!text) {
+    showToast(dict.emptyMsg || '請輸入問題內容！');
+    return;
+  }
 
   relay.send({
     type: 'SUBMIT',
@@ -46,11 +69,12 @@ window.submitQuestion = () => {
   });
 
   qInput.value = '';
-  if (charCount) charCount.textContent = '0/150';
-  showToast('提問已送達後台審核隊列！');
+  if (charCount) charCount.textContent = '0/200';
+  showToast(dict.successMsg || '提問已送達後台審核隊列！');
 };
 
 window.upvote = (qid) => {
+  const dict = getDict();
   if (myUpvotes.has(qid)) return;
   myUpvotes.add(qid);
   sessionStorage.setItem(`askif_votes_${roomId}`, JSON.stringify([...myUpvotes]));
@@ -64,19 +88,21 @@ window.upvote = (qid) => {
   const btn = document.getElementById(`up-${qid}`);
   if (btn) {
     btn.disabled = true;
-    btn.textContent = '已附議';
+    btn.textContent = dict.upvoted || '已附議';
     btn.style.opacity = '0.6';
   }
 };
 
 function renderQuestions(list) {
   const pool = document.getElementById('questions-pool');
+  if (!pool) return;
   pool.replaceChildren();
+  const dict = getDict();
 
   if (list.length === 0) {
     const emptyP = document.createElement('p');
-    emptyP.style.cssText = 'text-align:center; padding:2rem 0; color:#9aa0a6;';
-    emptyP.textContent = '目前尚無過審題目，搶先發問吧！';
+    emptyP.style.cssText = 'text-align:center; padding:2rem 0; color:#b0b6bd;';
+    emptyP.textContent = currentLang === 'zh' ? '目前尚無過審題目，搶先發問吧！' : 'No approved questions yet. Be the first to ask!';
     pool.appendChild(emptyP);
     return;
   }
@@ -95,7 +121,7 @@ function renderQuestions(list) {
     btn.id = `up-${q.qid}`;
     btn.className = 'btn';
     btn.style.cssText = 'padding:0.4rem 0.8rem; font-size:0.85rem; background:rgba(74,158,255,0.15); color:#4a9eff;';
-    btn.textContent = hasVoted ? '已附議' : `▲ ${q.upvotes}`;
+    btn.textContent = hasVoted ? (dict.upvoted || '已附議') : `▲ ${q.upvotes}`;
     btn.disabled = hasVoted;
     if (hasVoted) btn.style.opacity = '0.6';
 
