@@ -20,6 +20,8 @@ export const TRANSLATIONS = {
     errorWrongPwd: '密碼格式需為 4 至 16 位字元',
     errorNet: '連線伺服器失敗，請稍候再試',
     errorInvalidRoom: '請輸入正確的 6 位數字房號',
+
+    // 通用 / 觀眾端
     room: '房號',
     connected: '已連線',
     disconnected: '斷線',
@@ -29,7 +31,25 @@ export const TRANSLATIONS = {
     successMsg: '提問已送達後台審核隊列！',
     emptyMsg: '請輸入問題內容！',
     rateLimitMsg: '提問太頻繁，請稍候 30 秒。',
-    upvoted: '已附議'
+    upvoted: '已附議',
+
+    // 主持人端專用
+    backHome: '← 返回首頁',
+    confirmLeave: '確定要結束管理並返回首頁嗎？（關閉分頁後記憶體即物理銷毀）',
+    openDisplayBtn: '🖥️ 開大螢幕',
+    scanQrHint: '📱 觀眾現場掃碼加入',
+    destroyHint: '純記憶體運作，關閉分頁即物理銷毀。',
+    inboxTitle: '📥 待審題庫',
+    approvedTitle: '🚀 候選與大螢幕推題',
+    syncCloudOnline: '🟢 ● 已同步雲端中繼',
+    syncCloudOffline: '🔴 ○ 斷線重試中...',
+    btnPass: '✅ 通過',
+    btnReject: '❌ 駁回',
+    btnPushScreen: '🚀 長按推上大螢幕',
+    btnWithdrawScreen: '⏹️ 長按撤下大螢幕',
+    btnDismiss: '🗣️ 口頭答完',
+    badgeSpotlight: '大螢幕播放中',
+    upvoteCount: '附議'
   },
   en: {
     title: 'Real-time Live Q&A',
@@ -52,6 +72,8 @@ export const TRANSLATIONS = {
     errorWrongPwd: 'Passcode must be between 4 and 16 characters.',
     errorNet: 'Failed to connect to relay service. Please try again.',
     errorInvalidRoom: 'Please enter a valid 6-digit room code.',
+
+    // 通用 / 觀眾端
     room: 'Room',
     connected: 'Connected',
     disconnected: 'Offline',
@@ -61,7 +83,25 @@ export const TRANSLATIONS = {
     successMsg: 'Question submitted for review!',
     emptyMsg: 'Please enter your question.',
     rateLimitMsg: 'Please wait 30 seconds before submitting again.',
-    upvoted: 'Upvoted'
+    upvoted: 'Upvoted',
+
+    // 主持人端專用
+    backHome: '← Home',
+    confirmLeave: 'Are you sure you want to exit moderation? (Memory will be purged upon leaving)',
+    openDisplayBtn: '🖥️ Open Stage Display',
+    scanQrHint: '📱 Scan QR to Join Live',
+    destroyHint: 'Runs purely in edge memory. Auto-purged upon closing tab.',
+    inboxTitle: '📥 Inbox Queue',
+    approvedTitle: '🚀 Moderated & Stage Pool',
+    syncCloudOnline: '🟢 ● Relay Synchronized',
+    syncCloudOffline: '🔴 ○ Reconnecting...',
+    btnPass: '✅ Approve',
+    btnReject: '❌ Reject',
+    btnPushScreen: '🚀 Hold to Stage Display',
+    btnWithdrawScreen: '⏹️ Hold to Withdraw',
+    btnDismiss: '🗣️ Answered',
+    badgeSpotlight: 'Live on Stage',
+    upvoteCount: 'Upvotes'
   }
 };
 

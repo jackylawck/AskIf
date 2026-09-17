@@ -1,7 +1,8 @@
 import { Relay } from './relay.js';
+import { getSavedLang, TRANSLATIONS } from './i18n.js';
 
 const urlParams = new URLSearchParams(window.location.search);
-// 1. 保留原始 Ticket (例如 721612.1789...HPHd) 用於通過後端 WebSocket 驗證
+// 1. 保留原始 Ticket 用於通過後端 WebSocket 驗證
 const rawTicket = urlParams.get('room') || '888888';
 // 2. 拆解出純 6 位數房號供介面與 QR Code 使用
 const roomId = rawTicket.includes('.') ? rawTicket.split('.')[0] : rawTicket;
@@ -28,8 +29,18 @@ if (typeof qrcode === 'function') {
 // 3. 連線時傳入 rawTicket，後端 Worker 才能通過 verifyRoomTicket 檢查
 const relay = new Relay(rawTicket, 'HOST');
 
+// 記錄當前連線狀態
+let isRelayOnline = false;
+
+function getDict() {
+  const lang = getSavedLang();
+  return TRANSLATIONS[lang] || TRANSLATIONS.zh;
+}
+
 // 統一連線狀態顯示更新器
 function updateConnectionStatus(isOnline) {
+  isRelayOnline = isOnline;
+  const dict = getDict();
   const badges = [
     document.getElementById('sync-badge'),
     document.getElementById('status-badge'),
@@ -41,12 +52,12 @@ function updateConnectionStatus(isOnline) {
 
   badges.forEach((el) => {
     if (isOnline) {
-      el.textContent = '🟢 ● 已同步雲端中繼';
+      el.textContent = dict.syncCloudOnline;
       el.style.color = '#00b894';
       el.classList.remove('badge-danger');
       el.classList.add('badge-success');
     } else {
-      el.textContent = '🔴 ○ 斷線重試中...';
+      el.textContent = dict.syncCloudOffline;
       el.style.color = '#ff7675';
       el.classList.remove('badge-success');
       el.classList.add('badge-danger');
@@ -149,7 +160,6 @@ relay.onMessage((msg) => {
     }
 
     case 'REQ_SYNC': {
-      // P2 優化 2: 100ms 防抖合併多人同時進場的同步請求
       if (!pendingSyncTimer) {
         pendingSyncTimer = setTimeout(() => {
           pendingSyncTimer = null;
@@ -177,7 +187,6 @@ function saveToSession() {
   }
 }
 
-// P2 優化 3: 廣播內容 Hash 去重，無實質狀態變動不增加 version
 function broadcastState(force = false) {
   const currentHash = JSON.stringify({
     q: Array.from(state.approved.values()).map(x => [x.qid, x.upvotes]),
@@ -200,6 +209,7 @@ function broadcastState(force = false) {
 }
 
 function render() {
+  const dict = getDict();
   const inboxCountEl = document.getElementById('inbox-count');
   const approvedCountEl = document.getElementById('approved-count');
   if (inboxCountEl) inboxCountEl.textContent = state.pending.size;
@@ -225,7 +235,7 @@ function render() {
       const passBtn = document.createElement('button');
       passBtn.className = 'btn btn-success';
       passBtn.style.cssText = 'padding:0.4rem 0.8rem; font-size:0.8rem;';
-      passBtn.textContent = '✅ 通過';
+      passBtn.textContent = dict.btnPass;
       passBtn.onclick = () => {
         state.pending.delete(q.qid);
         state.approved.set(q.qid, { ...q, upvotedCids: new Set([q.cid]) });
@@ -236,7 +246,7 @@ function render() {
       const rejectBtn = document.createElement('button');
       rejectBtn.className = 'btn btn-danger';
       rejectBtn.style.cssText = 'padding:0.4rem 0.8rem; font-size:0.8rem;';
-      rejectBtn.textContent = '❌ 駁回';
+      rejectBtn.textContent = dict.btnReject;
       rejectBtn.onclick = () => {
         state.pending.delete(q.qid);
         render();
@@ -268,14 +278,14 @@ function render() {
 
       const upvoteSpan = document.createElement('span');
       upvoteSpan.style.cssText = 'font-weight:700; color:#4a9eff;';
-      upvoteSpan.textContent = `▲ +${q.upvotes} 附議`;
+      upvoteSpan.textContent = `▲ +${q.upvotes} ${dict.upvoteCount}`;
       headerRow.appendChild(upvoteSpan);
 
       if (isSpot) {
         const spotBadge = document.createElement('span');
         spotBadge.className = 'badge';
         spotBadge.style.cssText = 'background:#ff4757; color:#fff;';
-        spotBadge.textContent = '大螢幕播放中';
+        spotBadge.textContent = dict.badgeSpotlight;
         headerRow.appendChild(spotBadge);
       }
       card.appendChild(headerRow);
@@ -296,7 +306,7 @@ function render() {
       const labelSpan = document.createElement('span');
       labelSpan.style.position = 'relative';
       labelSpan.style.zIndex = '2';
-      labelSpan.textContent = isSpot ? '⏹️ 長按撤下大螢幕' : '🚀 長按推上大螢幕';
+      labelSpan.textContent = isSpot ? dict.btnWithdrawScreen : dict.btnPushScreen;
 
       const progressBar = document.createElement('div');
       progressBar.style.cssText = `
@@ -341,7 +351,7 @@ function render() {
       const dismissBtn = document.createElement('button');
       dismissBtn.className = 'btn';
       dismissBtn.style.fontSize = '0.8rem';
-      dismissBtn.textContent = '🗣️ 口頭答完';
+      dismissBtn.textContent = dict.btnDismiss;
       dismissBtn.onclick = () => {
         state.approved.delete(q.qid);
         if (state.spotlight?.qid === q.qid) state.spotlight = null;
@@ -356,5 +366,11 @@ function render() {
     });
   }
 }
+
+// 註冊全域供 host.html 切換語言時呼叫
+window.renderHostLists = () => {
+  render();
+  updateConnectionStatus(isRelayOnline);
+};
 
 render();
