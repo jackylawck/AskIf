@@ -2,8 +2,30 @@
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AskIf — 現場觀眾提問 | Audience Q&A</title>
+
+  <!-- 📱 圖示與 PWA 支援 -->
+  <link rel="icon" type="image/png" sizes="192x192" href="./AskIf192icon.png">
+  <link rel="shortcut icon" href="./AskIf192icon.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="./AskIf192icon.png">
+  <meta name="theme-color" content="#0d0f12">
+
+  <!-- 🛡️ 企業級 CSP 安全防線 -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data: blob: https://jackylawck.github.io;
+    font-src 'self' data:;
+    connect-src 'self' https://askif-relay.jackylawck.workers.dev wss://askif-relay.jackylawck.workers.dev;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'none';
+  ">
+  <meta http-equiv="Permissions-Policy" content="accelerometer=(), gyroscope=(), microphone=(), camera=(), geolocation=(), payment=()">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
   <link rel="stylesheet" href="./css/style.css">
   <style>
     .lang-switcher {
@@ -41,11 +63,13 @@
     </div>
   </div>
 
+  <!-- 提問輸入區 -->
   <div class="card">
     <textarea id="question-input" rows="4" maxlength="200" style="width:100%; box-sizing:border-box; resize:none; font-size:1rem;" placeholder="輸入你想探討的問題（限 200 字）..."></textarea>
     <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#888; margin-top:0.25rem;">
       <span id="char-count">0/200</span>
     </div>
+    <!-- 綁定 ID 與防呆鎖定 -->
     <button class="btn btn-primary" id="submit-btn" style="width:100%; margin-top:0.75rem;" data-i18n="submit">送出提問</button>
   </div>
 
@@ -64,59 +88,102 @@
     window.switchLang = function(lang) {
       currentLang = lang;
       applyI18n(lang);
-      const dict = TRANSLATIONS[lang];
-      document.getElementById('question-input').placeholder = dict.placeholder;
+      const dict = TRANSLATIONS[lang] || TRANSLATIONS.zh;
+      document.getElementById('question-input').placeholder = dict.placeholder || '輸入你想探討的問題（限 200 字）...';
       updateStatusBadge(isWsOnline);
+      if (typeof window.reRenderPool === 'function') {
+        window.reRenderPool();
+      }
     };
 
     const urlParams = new URLSearchParams(window.location.search);
-    const roomId = urlParams.get('room') || '888888';
+    const rawTicket = urlParams.get('room') || '888888';
+    const roomId = rawTicket.includes('.') ? rawTicket.split('.')[0] : rawTicket;
     document.getElementById('room-id-label').textContent = roomId;
 
     const relay = new Relay(roomId, 'AUDIENCE');
     let isWsOnline = false;
+    let currentQuestions = [];
+    const myUpvotes = new Set(JSON.parse(sessionStorage.getItem(`askif_votes_${roomId}`) || '[]'));
 
     function updateStatusBadge(online) {
       isWsOnline = online;
       const badge = document.getElementById('sync-badge');
-      const dict = TRANSLATIONS[currentLang];
+      const dict = TRANSLATIONS[currentLang] || TRANSLATIONS.zh;
       if (online) {
-        badge.textContent = `● ${dict.connected}`;
+        badge.textContent = `● ${dict.connected || '已連線'}`;
         badge.style.color = '#00b894';
       } else {
-        badge.textContent = `○ ${dict.disconnected}`;
+        badge.textContent = `○ ${dict.disconnected || '斷線'}`;
         badge.style.color = '#ff7675';
       }
     }
 
     const input = document.getElementById('question-input');
     const charCount = document.getElementById('char-count');
+    const submitBtn = document.getElementById('submit-btn');
+
     input.addEventListener('input', () => {
       charCount.textContent = `${input.value.length}/200`;
     });
 
-    let cid = localStorage.getItem('askif_cid');
+    // Client ID 記憶體/會話隔離
+    let cid = sessionStorage.getItem('askif_cid');
     if (!cid) {
       cid = 'user_' + Math.random().toString(36).substring(2, 9);
-      localStorage.setItem('askif_cid', cid);
+      sessionStorage.setItem('askif_cid', cid);
     }
 
     relay.onMessage((msg) => {
       if (msg.type === 'STATUS') {
         updateStatusBadge(msg.status === 'ONLINE');
+        if (msg.status === 'ONLINE') {
+          relay.send({ type: 'REQ_SYNC' });
+        }
         return;
       }
 
       if (msg.type === 'STATE' && Array.isArray(msg.questions)) {
-        renderPool(msg.questions);
+        currentQuestions = msg.questions;
+        renderPool(currentQuestions);
       }
     });
 
-    document.getElementById('submit-btn').onclick = () => {
+    // ⏱️ 30 秒發問倒數計時鎖定（徹底根除誤導）
+    let cooldownTimer = null;
+
+    function startCooldown(seconds) {
+      let remaining = seconds;
+      const dict = TRANSLATIONS[currentLang] || TRANSLATIONS.zh;
+
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.6';
+      submitBtn.style.cursor = 'not-allowed';
+      submitBtn.textContent = `${dict.coolingDown || '發問冷卻中'} (${remaining}s)`;
+
+      cooldownTimer = setInterval(() => {
+        remaining--;
+        const currentDict = TRANSLATIONS[currentLang] || TRANSLATIONS.zh;
+        if (remaining > 0) {
+          submitBtn.textContent = `${currentDict.coolingDown || '發問冷卻中'} (${remaining}s)`;
+        } else {
+          clearInterval(cooldownTimer);
+          cooldownTimer = null;
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = '1';
+          submitBtn.style.cursor = 'pointer';
+          submitBtn.textContent = currentDict.submit || '送出提問';
+        }
+      }, 1000);
+    }
+
+    submitBtn.onclick = () => {
+      if (cooldownTimer) return;
+
       const text = input.value.trim();
-      const dict = TRANSLATIONS[currentLang];
+      const dict = TRANSLATIONS[currentLang] || TRANSLATIONS.zh;
       if (!text) {
-        showToast(dict.emptyMsg);
+        showToast(dict.emptyMsg || '請輸入問題內容！');
         return;
       }
 
@@ -128,7 +195,10 @@
 
       input.value = '';
       charCount.textContent = '0/200';
-      showToast(dict.successMsg);
+      showToast(dict.successMsg || '提問已送達後台審核隊列！');
+
+      // 觸發 30 秒鎖定
+      startCooldown(30);
     };
 
     function showToast(msg) {
@@ -138,28 +208,55 @@
       setTimeout(() => { t.style.display = 'none'; }, 3000);
     }
 
+    window.reRenderPool = () => {
+      renderPool(currentQuestions);
+    };
+
     function renderPool(questions) {
       const pool = document.getElementById('approved-pool');
       pool.replaceChildren();
-      const dict = TRANSLATIONS[currentLang];
+      const dict = TRANSLATIONS[currentLang] || TRANSLATIONS.zh;
+
+      if (!questions || questions.length === 0) {
+        const emptyEl = document.createElement('p');
+        emptyEl.style.cssText = 'text-align:center; padding:1.5rem 0; color:#8b949e; font-size:0.9rem;';
+        emptyEl.textContent = dict.noQuestions || '目前尚無過審題目，搶先發問吧！';
+        pool.appendChild(emptyEl);
+        return;
+      }
 
       questions.forEach((q) => {
+        const hasVoted = myUpvotes.has(q.qid);
         const card = document.createElement('div');
         card.className = 'card';
         card.style.display = 'flex';
         card.style.justifyContent = 'space-between';
         card.style.alignItems = 'center';
+        card.style.gap = '0.75rem';
 
         const textEl = document.createElement('div');
         textEl.textContent = q.text;
-        textEl.style.fontSize = '0.95rem';
+        textEl.style.cssText = 'font-size:0.95rem; flex:1; word-break:break-word;';
 
         const upvoteBtn = document.createElement('button');
         upvoteBtn.className = 'btn';
-        upvoteBtn.style.padding = '0.3rem 0.6rem';
-        upvoteBtn.textContent = `▲ ${q.upvotes}`;
+        upvoteBtn.style.cssText = 'padding:0.35rem 0.75rem; font-size:0.85rem;';
+        upvoteBtn.textContent = hasVoted ? (dict.voted || '已附議') : `▲ ${q.upvotes}`;
+        upvoteBtn.disabled = hasVoted;
+        if (hasVoted) {
+          upvoteBtn.style.opacity = '0.6';
+        }
+
         upvoteBtn.onclick = () => {
+          if (myUpvotes.has(q.qid)) return;
+          myUpvotes.add(q.qid);
+          sessionStorage.setItem(`askif_votes_${roomId}`, JSON.stringify([...myUpvotes]));
+
           relay.send({ type: 'UPVOTE', qid: q.qid, cid: cid });
+
+          upvoteBtn.disabled = true;
+          upvoteBtn.textContent = dict.voted || '已附議';
+          upvoteBtn.style.opacity = '0.6';
         };
 
         card.appendChild(textEl);
