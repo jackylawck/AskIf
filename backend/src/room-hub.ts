@@ -50,7 +50,13 @@ function sanitizeText(str: string): string {
 }
 
 export class RoomHub {
-  constructor(private state: DurableObjectState, private env: Env) {}
+state: any;
+  env: any;
+
+  constructor(state: any, env: any) {
+    this.state = state;
+    this.env = env;
+  }
 
   async fetch(request: Request): Promise<Response> {
     if (!this.env.HOST_PASSWORD) {
