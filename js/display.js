@@ -53,12 +53,13 @@ relay.onMessage((msg) => {
 function render(spotlight) {
   const idleView = document.getElementById('idle-view');
   const spotView = document.getElementById('spotlight-view');
-  const miniQr = document.getElementById('mini-qr');
+  // 選取外層包裝盒，若無則回退選取 mini-qr
+  const miniBox = document.getElementById('mini-qr-box') || document.getElementById('mini-qr');
 
   if (spotlight) {
     idleView.style.display = 'none';
     spotView.style.display = 'block';
-    miniQr.style.display = 'block';
+    if (miniBox) miniBox.style.display = 'block';
 
     const textEl = document.getElementById('spot-text');
     const upvotesEl = document.getElementById('spot-upvotes');
@@ -68,6 +69,6 @@ function render(spotlight) {
   } else {
     idleView.style.display = 'block';
     spotView.style.display = 'none';
-    miniQr.style.display = 'none';
+    if (miniBox) miniBox.style.display = 'none';
   }
 }
