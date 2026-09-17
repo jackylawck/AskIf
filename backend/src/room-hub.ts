@@ -49,7 +49,7 @@ function sanitizeText(str: string): string {
     .replace(/'/g, '&#039;');
 }
 
-export class RoomHub implements DurableObject {
+export class RoomHub {
   constructor(private state: DurableObjectState, private env: Env) {}
 
   async fetch(request: Request): Promise<Response> {
