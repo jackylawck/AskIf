@@ -1,0 +1,24 @@
+{
+  "name": "AskIf 即時現場提問",
+  "short_name": "AskIf",
+  "description": "現場提問互動系統",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d0f12",
+  "theme_color": "#0d0f12",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./AskIf192icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./AskIf512icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

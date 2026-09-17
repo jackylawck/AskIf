@@ -1,9 +1,63 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-HK" prefix="og: https://ogp.me/ns#">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AskIf — 即時現場提問系統 | Real-time Q&A</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
+  
+  <!-- 🔍 Google 網站所有權驗證與 SEO 核心標籤 -->
+  <title>AskIf — 現場即時互動問答系統 | Enterprise Live Q&A</title>
+  <meta name="google-site-verification" content="JZ5UohX-CcP_fQV0_DI9VadkKY4ZoTTkUifL88-fIcY" />
+  <meta name="description" content="AskIf 是一款專為論壇與企業大會打造的無痕現場互動提問系統。純邊緣記憶體運算、零 PII 蒐集、會後物理銷毀，全面合規 ISO 27001/42001 與 GDPR 標準。">
+  <meta name="keywords" content="AskIf, 現場提問, 即時問答, 企業活動互動, Cloudflare Workers, Durable Objects, 無痕隱私, ISO 42001, GDPR, Slido替代方案">
+  <meta name="author" content="Jacky Law">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://jackylawck.github.io/AskIf/">
+
+  <!-- 🌐 Open Graph / Facebook / LinkedIn 社交卡片 -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://jackylawck.github.io/AskIf/">
+  <meta property="og:title" content="AskIf — 現場即時互動問答">
+  <meta property="og:description" content="無資料庫存儲、不蒐集個人資訊，會議閉幕即物理銷毀。極速、雙語且合規的企業級現場提問工具。">
+  <meta property="og:image" content="https://jackylawck.github.io/AskIf/AskIf512icon.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="AskIf 系統標誌">
+  <meta property="og:locale" content="zh_HK">
+  <meta property="og:site_name" content="AskIf">
+
+  <!-- 🐦 Twitter Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AskIf — 現場即時互動問答系統">
+  <meta name="twitter:description" content="極致流暢與合規的即時 Q&A 工具。純邊緣計算、隱私安全、雙語介面。">
+  <meta name="twitter:image" content="https://jackylawck.github.io/AskIf/AskIf512icon.png">
+
+  <!-- 📱 PWA 與手機主畫面設定 -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="./AskIf192icon.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="./AskIf192icon.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="./AskIf512icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AskIf">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d0f12">
+  <meta name="application-name" content="AskIf">
+
+  <!-- 🛡️ 企業級安全策略：CSP 與權限防禦 -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data: blob: https://jackylawck.github.io;
+    font-src 'self' data:;
+    connect-src 'self' https://askif-relay.jackylawck.workers.dev wss://askif-relay.jackylawck.workers.dev;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'none';
+  ">
+  <meta http-equiv="Permissions-Policy" content="accelerometer=(), gyroscope=(), microphone=(), camera=(), geolocation=(), payment=()">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
   <link rel="stylesheet" href="./css/style.css">
   <style>
     .lang-switcher {
