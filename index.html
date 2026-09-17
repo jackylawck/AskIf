@@ -292,7 +292,7 @@
       <h3 style="font-size:1.15rem;" data-i18n="audienceSectionTitle">📱 觀眾加入既有房間</h3>
       <p style="font-size:0.875rem;" data-i18n="audienceDesc">請輸入主辦方大螢幕提供的 6 位數字房間代碼：</p>
       <div class="join-grid">
-        <input type="text" id="manual-room-input" class="join-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="例如: 207449">
+        <input type="text" id="manual-room-input" class="join-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="例如: 250720">
         <button class="btn btn-primary" id="btn-join-room" style="padding: 0 1.25rem; font-weight:600;" data-i18n="joinBtn">進入</button>
       </div>
     </div>
@@ -343,7 +343,7 @@
     function updatePlaceholders(lang) {
       const roomInput = document.getElementById('manual-room-input');
       if (roomInput) {
-        roomInput.placeholder = lang === 'zh' ? '例如: 207449' : 'e.g. 207449';
+        roomInput.placeholder = lang === 'zh' ? '例如: 250720' : 'e.g. 250720';
       }
     }
 
