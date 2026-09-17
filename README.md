@@ -7,7 +7,7 @@
 **純邊緣記憶體運算・無痕私隱防護・會後物理銷毀・企業級即時互動**  
 *Edge-native memory computing · Zero-PII privacy · Session auto-purge · Enterprise real-time engagement*
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/jackylawck/AskIf/blob/main/LICENSE)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%26%20Durable%20Objects-F38020?logo=cloudflare)](https://workers.cloudflare.com/)
 [![GitHub Pages](https://img.shields.io/badge/Deployment-GitHub%20Pages-222222?logo=github)](https://jackylawck.github.io/AskIf/)
 [![Privacy: Zero-PII](https://img.shields.io/badge/Privacy-Zero--PII%20Compliant-00b894)](#-隱私與安全架構--privacy--security-architecture)
@@ -33,9 +33,10 @@
 * **🎙️ 主持人戰情室（Host Moderation Board）**：
   * 主持人開房時**自訂管理密碼**（4~16 位），密鑰與房號透過 HMAC-SHA256 簽名防偽。
   * 支援長按防手滑推題（0.8 秒長按防誤觸推上大螢幕）、口頭答畢一鍵移除。
-* **📱 觀眾極簡加入（Audience Web App）**：
+* **📱 觀眾極簡加入與冷卻防護（Audience Web App）**：
   * 支援 6 位數字房號手動輸入或大螢幕動態 QR Code 掃描，免密碼直接參與。
   * 支援即時提問（微秒級 XSS 過濾、200 字限制）與匿名附議（Upvote）。
+  * **內建 30 秒視覺化動態倒數鎖定**：送出後按鈕自動鎖定倒數，防止連點刷屏與誤導。
 * **🖥️ 舞台大螢幕投影（Stage Spotlight Display）**：
   * 雙擊全螢幕切換、滑鼠閒置 3 秒自動隱藏游標。
   * 待機狀態展示大 QR Code，推題時無縫平滑過渡放大聚焦點，右下角常駐 Mini QR 便於遲到觀眾掃碼。
@@ -51,11 +52,11 @@
 
 ### 🏛️ 架構概觀
 ```text
-[ 觀眾端 Audience ]  ───┐
-                       ├── TLS 1.3 / WSS ──► [ Cloudflare Workers Relay ]
-[ 主持端 Host ]      ───┤                                │
-                       │                           Durable Objects
-[ 大螢幕 Display ]   ───┘                        (RoomHub 邊緣記憶體)
+[ 觀眾端 Audience ]   ───┐
+                         ├── TLS 1.3 / WSS ──► [ Cloudflare Workers Relay ]
+[ 主持端 Host ]       ───┤                                │
+                         │                           Durable Objects
+[ 大螢幕 Display ]    ───┘                        (RoomHub 邊緣記憶體)
 
 ```
 
@@ -65,7 +66,7 @@
 
 * **傳輸防護**：全站強制採用 TLS 1.3、嚴格 Content Security Policy (CSP) 與 Permissions-Policy。
 * **時序攻擊防禦**：密鑰比對全數採用常數時間比對（Constant-Time `timingSafeEqual`）。
-* **非 AI 聲明與法規適用性**：本系統為純確定性傳輸中繼軟體，不涉及機器學習演算法與自動化決策，豁免 EU AI Act 與 ISO 42001，嚴格遵循 GDPR 與香港《個人資料（私隱）條例》（PDPO）。詳情參閱 [`COMPLIANCE.md`](https://www.google.com/search?q=./COMPLIANCE.md&utm_source=gemini)。
+* **非 AI 聲明與法規適用性**：本系統為純確定性傳輸中繼軟體，不涉及機器學習演算法與自動化決策，豁免 EU AI Act 與 ISO 42001，嚴格遵循 GDPR 與香港《個人資料（私隱）條例》（PDPO）。詳情參閱 [`COMPLIANCE.md`](https://github.com/jackylawck/AskIf/blob/main/COMPLIANCE.md?utm_source=gemini)。
 
 ---
 
@@ -113,9 +114,10 @@ npx wrangler deploy
 * Press-and-hold (0.8s) gesture protection to prevent accidental push/pull to the stage display.
 
 
-* **📱 Frictionless Audience Interaction**:
+* **📱 Frictionless Audience Interaction & Rate Limiting**:
 * Instant join via 6-digit room PIN or stage QR scan—no registration or password required.
 * Microsecond XSS sanitization (200-character cap) with real-time upvoting.
+* **30-second dynamic visual cooldown**: Submit button temporarily locks with a live countdown timer to eliminate repetitive spamming.
 
 
 * **🖥️ Stage Display Engine**:
@@ -143,7 +145,7 @@ npx wrangler deploy
 
 * **Network Security**: Strict TLS 1.3, Content Security Policy (CSP), and restrictive Permissions-Policy headers.
 * **Side-Channel Mitigation**: Constant-time comparison (`timingSafeEqual`) on all ticket and signature verifications.
-* **Regulatory Exclusions & Alignment**: Purely deterministic middleware without autonomous models or automated profiling—fully exempt from the EU AI Act and ISO 42001 while thoroughly aligned with GDPR (Data Minimization) and HK PDPO. See [`COMPLIANCE.md`](https://www.google.com/search?q=./COMPLIANCE.md&utm_source=gemini) for legal assessments.
+* **Regulatory Exclusions & Alignment**: Purely deterministic middleware without autonomous models or automated profiling—fully exempt from the EU AI Act and ISO 42001 while thoroughly aligned with GDPR (Data Minimization) and HK PDPO. See [`COMPLIANCE.md`](https://github.com/jackylawck/AskIf/blob/main/COMPLIANCE.md?utm_source=gemini) for legal assessments.
 
 ---
 
@@ -174,4 +176,4 @@ npx wrangler deploy
 
 ### 📄 License
 
-Released under the [MIT License](https://www.google.com/search?q=./LICENSE&utm_source=gemini).
+Released under the [MIT License](https://github.com/jackylawck/AskIf/blob/main/LICENSE?utm_source=gemini).
