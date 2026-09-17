@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AskIf — Audience Q&A</title>
+  <title>AskIf — 現場觀眾提問 | Audience Q&A</title>
   <link rel="stylesheet" href="./css/style.css">
   <style>
     .lang-switcher {
@@ -23,7 +23,7 @@
       cursor: pointer;
     }
     .lang-btn.active {
-      background: #30363d;
+      background: #388bfd;
       color: #fff;
       font-weight: bold;
     }
@@ -36,13 +36,13 @@
       <span class="badge" id="sync-badge" style="color:#ff7675;">○ <span data-i18n="disconnected">斷線</span></span>
     </div>
     <div class="lang-switcher">
-      <button class="lang-btn active" id="btn-zh" onclick="setLang('zh')">繁中</button>
-      <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" id="btn-zh" onclick="switchLang('zh')">繁中</button>
+      <button class="lang-btn" id="btn-en" onclick="switchLang('en')">EN</button>
     </div>
   </div>
 
   <div class="card">
-    <textarea id="question-input" rows="4" maxlength="200" style="width:100%; box-sizing:border-box; resize:none;" placeholder="輸入你想探討的問題（限 200 字）..."></textarea>
+    <textarea id="question-input" rows="4" maxlength="200" style="width:100%; box-sizing:border-box; resize:none; font-size:1rem;" placeholder="輸入你想探討的問題（限 200 字）..."></textarea>
     <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#888; margin-top:0.25rem;">
       <span id="char-count">0/200</span>
     </div>
@@ -56,48 +56,17 @@
 
   <script type="module">
     import { Relay } from './js/relay.js';
+    import { applyI18n, getSavedLang, TRANSLATIONS } from './js/i18n.js';
 
-    // 雙語文字字典
-    const i18n = {
-      zh: {
-        room: '房號',
-        connected: '已連線',
-        disconnected: '斷線',
-        placeholder: '輸入你想探討的問題（限 200 字）...',
-        submit: '送出提問',
-        featuredPool: '精選提問池',
-        successMsg: '提問已送達後台審核隊列！',
-        emptyMsg: '請輸入問題內容！',
-        rateLimitMsg: '提問太頻繁，請稍候 30 秒。',
-        upvoted: '已附議'
-      },
-      en: {
-        room: 'Room',
-        connected: 'Connected',
-        disconnected: 'Offline',
-        placeholder: 'Ask a question (Max 200 chars)...',
-        submit: 'Submit Question',
-        featuredPool: 'Featured Questions',
-        successMsg: 'Question submitted for review!',
-        emptyMsg: 'Please enter your question.',
-        rateLimitMsg: 'Please wait 30 seconds before submitting again.',
-        upvoted: 'Upvoted'
-      }
-    };
+    let currentLang = getSavedLang();
+    applyI18n(currentLang);
 
-    let currentLang = 'zh';
-
-    window.setLang = function(lang) {
+    window.switchLang = function(lang) {
       currentLang = lang;
-      document.getElementById('btn-zh').classList.toggle('active', lang === 'zh');
-      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
-      
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (i18n[lang][key]) el.textContent = i18n[lang][key];
-      });
-
-      document.getElementById('question-input').placeholder = i18n[lang].placeholder;
+      applyI18n(lang);
+      const dict = TRANSLATIONS[lang];
+      document.getElementById('question-input').placeholder = dict.placeholder;
+      updateStatusBadge(isWsOnline);
     };
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -105,6 +74,20 @@
     document.getElementById('room-id-label').textContent = roomId;
 
     const relay = new Relay(roomId, 'AUDIENCE');
+    let isWsOnline = false;
+
+    function updateStatusBadge(online) {
+      isWsOnline = online;
+      const badge = document.getElementById('sync-badge');
+      const dict = TRANSLATIONS[currentLang];
+      if (online) {
+        badge.textContent = `● ${dict.connected}`;
+        badge.style.color = '#00b894';
+      } else {
+        badge.textContent = `○ ${dict.disconnected}`;
+        badge.style.color = '#ff7675';
+      }
+    }
 
     const input = document.getElementById('question-input');
     const charCount = document.getElementById('char-count');
@@ -112,7 +95,6 @@
       charCount.textContent = `${input.value.length}/200`;
     });
 
-    // 匿名指紋 ID
     let cid = localStorage.getItem('askif_cid');
     if (!cid) {
       cid = 'user_' + Math.random().toString(36).substring(2, 9);
@@ -120,15 +102,8 @@
     }
 
     relay.onMessage((msg) => {
-      const badge = document.getElementById('sync-badge');
       if (msg.type === 'STATUS') {
-        if (msg.status === 'ONLINE') {
-          badge.innerHTML = `● <span data-i18n="connected">${i18n[currentLang].connected}</span>`;
-          badge.style.color = '#00b894';
-        } else {
-          badge.innerHTML = `○ <span data-i18n="disconnected">${i18n[currentLang].disconnected}</span>`;
-          badge.style.color = '#ff7675';
-        }
+        updateStatusBadge(msg.status === 'ONLINE');
         return;
       }
 
@@ -139,8 +114,9 @@
 
     document.getElementById('submit-btn').onclick = () => {
       const text = input.value.trim();
+      const dict = TRANSLATIONS[currentLang];
       if (!text) {
-        showToast(i18n[currentLang].emptyMsg);
+        showToast(dict.emptyMsg);
         return;
       }
 
@@ -152,7 +128,7 @@
 
       input.value = '';
       charCount.textContent = '0/200';
-      showToast(i18n[currentLang].successMsg);
+      showToast(dict.successMsg);
     };
 
     function showToast(msg) {
@@ -165,6 +141,8 @@
     function renderPool(questions) {
       const pool = document.getElementById('approved-pool');
       pool.replaceChildren();
+      const dict = TRANSLATIONS[currentLang];
+
       questions.forEach((q) => {
         const card = document.createElement('div');
         card.className = 'card';
