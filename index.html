@@ -292,7 +292,7 @@
       <h3 style="font-size:1.15rem;" data-i18n="audienceSectionTitle">📱 觀眾加入既有房間</h3>
       <p style="font-size:0.875rem;" data-i18n="audienceDesc">請輸入主辦方大螢幕提供的 6 位數字房間代碼：</p>
       <div class="join-grid">
-        <input type="text" id="manual-room-input" class="join-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="000000">
+        <input type="text" id="manual-room-input" class="join-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="例如: 207449">
         <button class="btn btn-primary" id="btn-join-room" style="padding: 0 1.25rem; font-weight:600;" data-i18n="joinBtn">進入</button>
       </div>
     </div>
@@ -301,7 +301,7 @@
     <details class="compliance-card" id="compliance-details">
       <summary>
         <div class="summary-title" data-i18n="complianceTitle">🛡️ 企業級資安與全球私隱合規架構</div>
-        <div class="summary-toggle" id="compliance-toggle-label">＋ 展開 / View</div>
+        <div class="summary-toggle" id="compliance-toggle-label">＋ 展開</div>
       </summary>
       <div class="compliance-content">
         <div class="badge-grid" id="badge-container"></div>
@@ -338,6 +338,14 @@
     applyI18n(currentLang);
     renderBadges();
     updateToggleText();
+    updatePlaceholders(currentLang);
+
+    function updatePlaceholders(lang) {
+      const roomInput = document.getElementById('manual-room-input');
+      if (roomInput) {
+        roomInput.placeholder = lang === 'zh' ? '例如: 207449' : 'e.g. 207449';
+      }
+    }
 
     function updateToggleText() {
       const details = document.getElementById('compliance-details');
@@ -378,6 +386,7 @@
       document.documentElement.lang = 'zh-HK';
       applyI18n('zh');
       updateToggleText();
+      updatePlaceholders('zh');
     });
 
     document.getElementById('btn-en').addEventListener('click', () => {
@@ -385,6 +394,7 @@
       document.documentElement.lang = 'en';
       applyI18n('en');
       updateToggleText();
+      updatePlaceholders('en');
     });
 
     const modal = document.getElementById('pwd-modal');
@@ -474,11 +484,9 @@
           throw new Error('伺服器未回傳有效票據 (Ticket)');
         }
 
-        // 雙重保險：以 roomId 與完整 ticket 分別寫入，確保 host.js 無論讀取哪一個都能取到
         sessionStorage.setItem(`askif_host_pwd_${data.roomId}`, pwd);
         sessionStorage.setItem(`askif_host_pwd_${data.ticket}`, pwd);
 
-        // 導向帶有 HMAC Ticket 與暫態 fragment 的 host.html
         window.location.href = `./host.html?room=${encodeURIComponent(data.ticket)}#key=${encodeURIComponent(pwd)}`;
       } catch (err) {
         console.error('[Create Room Error]:', err);
