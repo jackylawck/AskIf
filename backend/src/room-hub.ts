@@ -1,6 +1,29 @@
 // backend/src/room-hub.ts
 import { Env } from './types';
 
+// 為本地編輯器補齊 Cloudflare Workers 全域宣告，消除紅線
+declare global {
+  interface DurableObjectState {
+    storage: {
+      getAlarm(): Promise<number | null>;
+      setAlarm(scheduledTime: number | Date): Promise<void>;
+    };
+    acceptWebSocket(ws: WebSocket, tags?: string[]): void;
+    getWebSockets(tag?: string): WebSocket[];
+  }
+  interface DurableObject {
+    fetch(request: Request): Promise<Response>;
+    alarm?(): Promise<void>;
+    webSocketMessage?(ws: WebSocket, message: string | ArrayBuffer): Promise<void>;
+    webSocketClose?(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void>;
+    webSocketError?(ws: WebSocket, error: unknown): Promise<void>;
+  }
+  interface WebSocket {
+    serializeAttachment(attachment: any): void;
+    deserializeAttachment(): any;
+  }
+}
+
 interface WsAttachment {
   role: "host" | "audience" | "display";
   authed: boolean;
@@ -137,12 +160,10 @@ export class RoomHub implements DurableObject {
       return;
     }
 
-    // 業務安全轉發
     switch (data.type) {
       case "REQ_SYNC":
       case "SUBMIT":
       case "SUBMIT_QUESTION": {
-        // 安全檢查與 200 字清理
         if (typeof data.text === "string") {
           data.text = sanitizeText(data.text.trim().substring(0, 200));
         }

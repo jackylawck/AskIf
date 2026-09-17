@@ -1,4 +1,3 @@
-cat << 'EOF' > /workspaces/AskIf/js/i18n.js
 export const TRANSLATIONS = {
   zh: {
     title: '現場即時互動問答',
@@ -93,8 +92,3 @@ export function applyI18n(lang = getSavedLang()) {
 
   return dict;
 }
-EOF
-
-git add js/i18n.js
-git commit -m "feat: add i18n module file"
-git push origin main
