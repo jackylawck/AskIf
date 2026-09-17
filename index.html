@@ -28,15 +28,46 @@
       background: #388bfd;
       color: #fff;
     }
-    .compliance-card {
+    /* 可折疊合規卡片 */
+    details.compliance-card {
       margin-top: 1.5rem;
       background: rgba(22, 27, 34, 0.7);
       border: 1px solid #30363d;
       border-radius: 8px;
-      padding: 1rem;
+      padding: 0.75rem 1rem;
       font-size: 0.8rem;
       color: #8b949e;
       line-height: 1.6;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    details.compliance-card[open] {
+      background: rgba(22, 27, 34, 0.95);
+    }
+    details.compliance-card summary {
+      font-weight: bold;
+      color: #f0f6fc;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+    details.compliance-card summary::-webkit-details-marker {
+      display: none;
+    }
+    details.compliance-card summary::after {
+      content: '＋ 展開 / View';
+      font-size: 0.75rem;
+      color: #58a6ff;
+      font-weight: normal;
+    }
+    details.compliance-card[open] summary::after {
+      content: '－ 收起 / Hide';
+    }
+    .compliance-content {
+      margin-top: 0.75rem;
+      cursor: default;
     }
     .badge-grid {
       display: flex;
@@ -88,8 +119,8 @@
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
     <div style="font-weight:bold; font-size:1.1rem; color:#f0f6fc;">AskIf</div>
     <div class="lang-switcher">
-      <button class="lang-btn active" id="btn-zh" onclick="switchLang('zh')">繁中</button>
-      <button class="lang-btn" id="btn-en" onclick="switchLang('en')">EN</button>
+      <button class="lang-btn active" id="btn-zh">繁中</button>
+      <button class="lang-btn" id="btn-en">EN</button>
     </div>
   </div>
 
@@ -102,7 +133,7 @@
   <div class="card" style="margin-bottom:1.5rem;">
     <h3 style="margin-top:0; font-size:1.1rem;" data-i18n="hostSectionTitle">🎙️ 主辦人 / 主持人入口</h3>
     <p style="font-size:0.85rem; color:#8b949e;" data-i18n="hostDesc">建立專屬議程房間，獲取大螢幕投影連結與即時審題戰情室。</p>
-    <button class="btn btn-primary" style="width:100%; margin-top:0.75rem;" onclick="openPasswordModal()" data-i18n="createRoomBtn">建立新會議房間</button>
+    <button class="btn btn-primary" id="btn-open-modal" style="width:100%; margin-top:0.75rem;" data-i18n="createRoomBtn">建立新會議房間</button>
   </div>
 
   <!-- 觀眾加入入口 -->
@@ -111,25 +142,27 @@
     <p style="font-size:0.85rem; color:#8b949e;" data-i18n="audienceDesc">請輸入主辦方大螢幕提供的 6 位數字房間代碼：</p>
     <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
       <input type="text" id="manual-room-input" maxlength="6" placeholder="例如: 207449" style="flex:1; padding:0.5rem 0.75rem; border-radius:6px; border:1px solid #30363d; background:#0d1117; color:#fff; text-align:center; font-size:1.1rem; letter-spacing:2px;">
-      <button class="btn" style="padding:0 1.2rem;" onclick="joinAsAudience()" data-i18n="joinBtn">進入</button>
+      <button class="btn" id="btn-join-room" style="padding:0 1.2rem;" data-i18n="joinBtn">進入</button>
     </div>
   </div>
 
-  <!-- 企業合規、隱私與資安承諾看板 -->
-  <div class="compliance-card">
-    <div style="font-weight:bold; color:#f0f6fc; margin-bottom:0.4rem;" data-i18n="complianceTitle">🛡️ 企業級資安與全球私隱合規架構</div>
-    <div class="badge-grid">
-      <span class="comp-badge">ISO/IEC 27001 (InfoSec)</span>
-      <span class="comp-badge">ISO/IEC 27701 (Privacy)</span>
-      <span class="comp-badge">ISO/IEC 42001 (AI Governance)</span>
-      <span class="comp-badge">GDPR / EU AI Act Compliant</span>
-      <span class="comp-badge">HK PDPO (香港私隱條例)</span>
-      <span class="comp-badge">CAC 網信辦規範標準</span>
+  <!-- 企業合規、隱私與資安承諾（預設捲起收合） -->
+  <details class="compliance-card">
+    <summary data-i18n="complianceTitle">🛡️ 企業級資安與全球私隱合規架構</summary>
+    <div class="compliance-content">
+      <div class="badge-grid">
+        <span class="comp-badge">ISO/IEC 27001 (InfoSec)</span>
+        <span class="comp-badge">ISO/IEC 27701 (Privacy)</span>
+        <span class="comp-badge">ISO/IEC 42001 (AI Governance)</span>
+        <span class="comp-badge">GDPR / EU AI Act Compliant</span>
+        <span class="comp-badge">HK PDPO (香港私隱條例)</span>
+        <span class="comp-badge">CAC 網信辦規範標準</span>
+      </div>
+      <div data-i18n="complianceBody">
+        本系統落實「Privacy by Design 預設隱私保護」架構：無資料庫存儲、不蒐集個人可識別資訊（Zero-PII）、提問皆於 Cloudflare 邊緣記憶體運作，會議閉幕即物理銷毀；全站通訊採 TLS 1.3 與 HMAC-SHA256 簽名防偽，保障企業現場交流合規無虞。
+      </div>
     </div>
-    <div data-i18n="complianceBody">
-      本系統落實「Privacy by Design 預設隱私保護」架構：無資料庫存儲、不蒐集個人可識別資訊（Zero-PII）、提問皆於 Cloudflare 邊緣記憶體運作，會議閉幕即物理銷毀；全站通訊採 TLS 1.3 與 HMAC-SHA256 簽名防偽，保障企業現場交流合規無虞。
-    </div>
-  </div>
+  </details>
 
   <!-- 主持人密碼輸入彈窗 -->
   <div id="pwd-modal" class="modal-overlay" style="display:none;">
@@ -145,8 +178,8 @@
       <div id="modal-error" style="color:#ff7675; font-size:0.8rem; margin-top:0.4rem; display:none;"></div>
 
       <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.2rem;">
-        <button class="btn" onclick="closePasswordModal()" data-i18n="cancelBtn">取消</button>
-        <button class="btn btn-primary" id="confirm-create-btn" onclick="submitCreateRoom()" data-i18n="confirmBtn">確認開房</button>
+        <button class="btn" id="btn-cancel-modal" data-i18n="cancelBtn">取消</button>
+        <button class="btn btn-primary" id="confirm-create-btn" data-i18n="confirmBtn">確認開房</button>
       </div>
     </div>
   </div>
@@ -157,26 +190,47 @@
     let currentLang = getSavedLang();
     applyI18n(currentLang);
 
-    window.switchLang = function(lang) {
-      currentLang = lang;
-      applyI18n(lang);
-    };
+    // 語言切換事件
+    document.getElementById('btn-zh').addEventListener('click', () => {
+      currentLang = 'zh';
+      applyI18n('zh');
+    });
 
-    window.openPasswordModal = function() {
-      document.getElementById('modal-error').style.display = 'none';
-      document.getElementById('modal-password').value = '';
-      document.getElementById('pwd-modal').style.display = 'flex';
-      setTimeout(() => document.getElementById('modal-password').focus(), 100);
-    };
+    document.getElementById('btn-en').addEventListener('click', () => {
+      currentLang = 'en';
+      applyI18n('en');
+    });
 
-    window.closePasswordModal = function() {
-      document.getElementById('pwd-modal').style.display = 'none';
-    };
+    // 彈窗開關控制
+    const modal = document.getElementById('pwd-modal');
+    const pwdInput = document.getElementById('modal-password');
+    const errBox = document.getElementById('modal-error');
+    const submitBtn = document.getElementById('confirm-create-btn');
 
-    window.submitCreateRoom = async function() {
-      const pwdInput = document.getElementById('modal-password');
-      const errBox = document.getElementById('modal-error');
-      const submitBtn = document.getElementById('confirm-create-btn');
+    document.getElementById('btn-open-modal').addEventListener('click', () => {
+      errBox.style.display = 'none';
+      pwdInput.value = '';
+      modal.style.display = 'flex';
+      setTimeout(() => pwdInput.focus(), 100);
+    });
+
+    document.getElementById('btn-cancel-modal').addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+
+    // 觀眾進入房間
+    document.getElementById('btn-join-room').addEventListener('click', () => {
+      const input = document.getElementById('manual-room-input').value.trim();
+      const dict = TRANSLATIONS[currentLang];
+      if (/^\d{6}$/.test(input)) {
+        window.location.href = `./audience.html?room=${input}`;
+      } else {
+        alert(dict.errorInvalidRoom);
+      }
+    });
+
+    // 送出開房驗證
+    submitBtn.addEventListener('click', async () => {
       const pwd = pwdInput.value.trim();
       const dict = TRANSLATIONS[currentLang];
 
@@ -216,17 +270,7 @@
         submitBtn.disabled = false;
         submitBtn.textContent = dict.confirmBtn;
       }
-    };
-
-    window.joinAsAudience = function() {
-      const input = document.getElementById('manual-room-input').value.trim();
-      const dict = TRANSLATIONS[currentLang];
-      if (/^\d{6}$/.test(input)) {
-        window.location.href = `./audience.html?room=${input}`;
-      } else {
-        alert(dict.errorInvalidRoom);
-      }
-    };
+    });
   </script>
 </body>
 </html>
