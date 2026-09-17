@@ -1,8 +1,15 @@
 // backend/src/room-hub.ts
 import { Env } from './types';
 
-// 為本地編輯器補齊 Cloudflare Workers 全域宣告，消除紅線
+// 為本地 VS Code 補齊 Cloudflare Workers 特有型別宣告
 declare global {
+  class WebSocketPair {
+    0: WebSocket;
+    1: WebSocket;
+  }
+  interface ResponseInit {
+    webSocket?: WebSocket;
+  }
   interface DurableObjectState {
     storage: {
       getAlarm(): Promise<number | null>;
@@ -10,13 +17,6 @@ declare global {
     };
     acceptWebSocket(ws: WebSocket, tags?: string[]): void;
     getWebSockets(tag?: string): WebSocket[];
-  }
-  interface DurableObject {
-    fetch(request: Request): Promise<Response>;
-    alarm?(): Promise<void>;
-    webSocketMessage?(ws: WebSocket, message: string | ArrayBuffer): Promise<void>;
-    webSocketClose?(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void>;
-    webSocketError?(ws: WebSocket, error: unknown): Promise<void>;
   }
   interface WebSocket {
     serializeAttachment(attachment: any): void;
@@ -50,7 +50,7 @@ function sanitizeText(str: string): string {
 }
 
 export class RoomHub {
-state: any;
+  state: any;
   env: any;
 
   constructor(state: any, env: any) {
@@ -75,7 +75,7 @@ state: any;
       requestedRole === "display" ? "display" : "audience";
 
     const pair = new WebSocketPair();
-    const [client, server] = Object.values(pair) as [WebSocket, WebSocket];
+    const [client, server] = [pair[0], pair[1]];
 
     const isHost = role === "host";
     const initialData: WsAttachment = {
