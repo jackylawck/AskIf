@@ -7,7 +7,7 @@
 **純邊緣記憶體運算・無痕私隱防護・會後物理銷毀・企業級即時互動**  
 *Edge-native memory computing · Zero-PII privacy · Session auto-purge · Enterprise real-time engagement*
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%26%20Durable%20Objects-F38020?logo=cloudflare)](https://workers.cloudflare.com/)
 [![GitHub Pages](https://img.shields.io/badge/Deployment-GitHub%20Pages-222222?logo=github)](https://jackylawck.github.io/AskIf/)
 [![Privacy: Zero-PII](https://img.shields.io/badge/Privacy-Zero--PII%20Compliant-00b894)](#-隱私與安全架構--privacy--security-architecture)
@@ -50,30 +50,31 @@
 ---
 
 ### 🏛️ 架構概觀
-
-```
-
+```text
 [ 觀眾端 Audience ]  ───┐
-├── TLS 1.3 / WSS ──► [ Cloudflare Workers Relay ]
-[ 主持端 Host ]      ───┤                          │
-│                     Durable Objects
-[ 大螢幕 Display ]   ───┘                    (RoomHub 邊緣記憶體)
+                       ├── TLS 1.3 / WSS ──► [ Cloudflare Workers Relay ]
+[ 主持端 Host ]      ───┤                                │
+                       │                           Durable Objects
+[ 大螢幕 Display ]   ───┘                        (RoomHub 邊緣記憶體)
 
 ```
 
 ---
 
 ### 🛡️ 隱私與安全架構
+
 * **傳輸防護**：全站強制採用 TLS 1.3、嚴格 Content Security Policy (CSP) 與 Permissions-Policy。
 * **時序攻擊防禦**：密鑰比對全數採用常數時間比對（Constant-Time `timingSafeEqual`）。
-* **非 AI 聲明與法規適用性**：本系統為純確定性傳輸中繼軟體，不涉及機器學習演算法與自動化決策，豁免 EU AI Act 與 ISO 42001，嚴格遵循 GDPR 與香港《個人資料（私隱）條例》（PDPO）。詳情參閱 [`COMPLIANCE.md`](./COMPLIANCE.md)。
+* **非 AI 聲明與法規適用性**：本系統為純確定性傳輸中繼軟體，不涉及機器學習演算法與自動化決策，豁免 EU AI Act 與 ISO 42001，嚴格遵循 GDPR 與香港《個人資料（私隱）條例》（PDPO）。詳情參閱 [`COMPLIANCE.md`](https://www.google.com/search?q=./COMPLIANCE.md&utm_source=gemini)。
 
 ---
 
 ### 🚀 快速本地開發與部署
 
 #### 1. 前端（Static Pages）
+
 前端可直接由 GitHub Pages 或任何靜態 HTTP 伺服器託管：
+
 ```bash
 # 本地預覽
 npx serve .
@@ -173,4 +174,4 @@ npx wrangler deploy
 
 ### 📄 License
 
-Released under the [MIT License](https://www.google.com/search?q=LICENSE&utm_source=gemini).
+Released under the [MIT License](https://www.google.com/search?q=./LICENSE&utm_source=gemini).
