@@ -30,6 +30,7 @@ export const TRANSLATIONS = {
     featuredPool: '精選提問池',
     successMsg: '提問已送達後台審核隊列！',
     emptyMsg: '請輸入問題內容！',
+    emptyPool: '目前尚無過審題目，搶先發問吧！',
     rateLimitMsg: '提問太頻繁，請稍候 30 秒。',
     upvoted: '已附議',
 
@@ -82,6 +83,7 @@ export const TRANSLATIONS = {
     featuredPool: 'Featured Questions',
     successMsg: 'Question submitted for review!',
     emptyMsg: 'Please enter your question.',
+    emptyPool: 'No approved questions yet. Be the first to ask!',
     rateLimitMsg: 'Please wait 30 seconds before submitting again.',
     upvoted: 'Upvoted',
 

@@ -53,7 +53,6 @@ relay.onMessage((msg) => {
 function render(spotlight) {
   const idleView = document.getElementById('idle-view');
   const spotView = document.getElementById('spotlight-view');
-  // 選取外層包裝盒，若無則回退選取 mini-qr
   const miniBox = document.getElementById('mini-qr-box') || document.getElementById('mini-qr');
 
   if (spotlight) {
@@ -64,8 +63,18 @@ function render(spotlight) {
     const textEl = document.getElementById('spot-text');
     const upvotesEl = document.getElementById('spot-upvotes');
 
-    if (textEl) textEl.textContent = spotlight.text;
-    if (upvotesEl) upvotesEl.textContent = `▲ +${spotlight.upvotes} 附議 / Upvotes`;
+    if (textEl) {
+      textEl.textContent = spotlight.text;
+      // 長提問文字自適應微調：超過 60 字時微幅下調字體大小，避免大螢幕溢出
+      if (spotlight.text.length > 60) {
+        textEl.style.fontSize = 'clamp(1.8rem, 4.2vmin, 4rem)';
+      } else {
+        textEl.style.fontSize = 'clamp(2.5rem, 6vmin, 6rem)';
+      }
+    }
+    if (upvotesEl) {
+      upvotesEl.textContent = `▲ +${spotlight.upvotes} 附議 / Upvotes`;
+    }
   } else {
     idleView.style.display = 'block';
     spotView.style.display = 'none';
