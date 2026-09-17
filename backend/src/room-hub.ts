@@ -7,7 +7,6 @@ interface WsAttachment {
   connectedAt: number;
 }
 
-// 常數時間字串比較，防禦時序側通道攻擊
 function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let result = 0;
@@ -17,12 +16,21 @@ function timingSafeEqual(a: string, b: string): boolean {
   return result === 0;
 }
 
+// 企業級 XSS 消毒（微秒級完成，無外部庫相依性）
+function sanitizeText(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export class RoomHub implements DurableObject {
   constructor(private state: DurableObjectState, private env: Env) {}
 
   async fetch(request: Request): Promise<Response> {
     if (!this.env.HOST_PASSWORD) {
-      console.error("[CRITICAL] HOST_PASSWORD secret is not set.");
       return new Response("Server misconfiguration: HOST_PASSWORD not set", { status: 500 });
     }
 
@@ -43,14 +51,13 @@ export class RoomHub implements DurableObject {
     const isHost = role === "host";
     const initialData: WsAttachment = {
       role,
-      authed: !isHost, // 觀眾與大螢幕免認證；主持人初始未認證
+      authed: !isHost,
       connectedAt: Date.now()
     };
 
     this.state.acceptWebSocket(server, [role]);
     server.serializeAttachment(initialData);
 
-    // 主持人連線進入，排程 5 秒後的 Alarm 主動稽核
     if (isHost) {
       const currentAlarm = await this.state.storage.getAlarm();
       if (currentAlarm === null) {
@@ -61,7 +68,6 @@ export class RoomHub implements DurableObject {
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  // DO 原生鬧鐘：清理超時未認證的 host 連線
   async alarm(): Promise<void> {
     const hosts = this.state.getWebSockets("host");
     const now = Date.now();
@@ -72,7 +78,7 @@ export class RoomHub implements DurableObject {
       if (att?.role === "host" && !att?.authed) {
         const deadline = att.connectedAt + 5000;
         if (now >= deadline) {
-          host.close(1008, "Authentication Timeout (Active Eviction)");
+          host.close(1008, "Authentication Timeout");
         } else {
           earliestPending = Math.min(earliestPending, deadline);
         }
@@ -104,15 +110,11 @@ export class RoomHub implements DurableObject {
       return;
     }
 
-    // 心跳保活回應
     if (data.type === "PING") {
-      try {
-        ws.send(JSON.stringify({ type: "PONG" }));
-      } catch {}
+      try { ws.send(JSON.stringify({ type: "PONG" })); } catch {}
       return;
     }
 
-    // 第一幀握手認證（針對 host）
     if (attachment.role === "host" && !attachment.authed) {
       if (Date.now() - attachment.connectedAt > 5000) {
         ws.close(1008, "Authentication Timeout");
@@ -135,22 +137,33 @@ export class RoomHub implements DurableObject {
       return;
     }
 
-    // 業務安全路由轉發
+    // 業務安全轉發
     switch (data.type) {
       case "REQ_SYNC":
-      case "SUBMIT_QUESTION":
       case "SUBMIT":
+      case "SUBMIT_QUESTION": {
+        // 安全檢查與 200 字清理
+        if (typeof data.text === "string") {
+          data.text = sanitizeText(data.text.trim().substring(0, 200));
+        }
+        const hosts = this.state.getWebSockets("host");
+        const payload = JSON.stringify(data);
+        for (const host of hosts) {
+          const att = host.deserializeAttachment() as WsAttachment;
+          if (att?.authed) {
+            try { host.send(payload); } catch {}
+          }
+        }
+        break;
+      }
+
       case "UPVOTE": {
         const hosts = this.state.getWebSockets("host");
         const payload = JSON.stringify(data);
         for (const host of hosts) {
           const att = host.deserializeAttachment() as WsAttachment;
           if (att?.authed) {
-            try { 
-              host.send(payload); 
-            } catch (err) {
-              console.error("[DO] Send to host failed:", err);
-            }
+            try { host.send(payload); } catch {}
           }
         }
         break;
@@ -170,11 +183,7 @@ export class RoomHub implements DurableObject {
         ];
         const payload = JSON.stringify(data);
         for (const target of targets) {
-          try { 
-            target.send(payload); 
-          } catch (err) {
-            console.error("[DO] Broadcast send failed:", err);
-          }
+          try { target.send(payload); } catch {}
         }
         break;
       }
@@ -183,7 +192,7 @@ export class RoomHub implements DurableObject {
 
   async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void> {
     if (!wasClean && code !== 1000) {
-      console.log(`[WS Close] code=${code} reason=${reason} wasClean=${wasClean}`);
+      console.log(`[WS Close] code=${code} reason=${reason}`);
     }
   }
 

@@ -55,7 +55,6 @@ export default {
     const origin = request.headers.get('Origin') || '';
     const defaultOrigin = 'https://jackylawck.github.io';
 
-    // 寬容比對允許的來源（支援 GitHub Pages、localhost 與 127.0.0.1）
     const isAllowed =
       origin === defaultOrigin ||
       origin.startsWith('https://jackylawck.github.io') ||
@@ -64,35 +63,36 @@ export default {
 
     const allowOriginHeader = isAllowed && origin ? origin : defaultOrigin;
 
-    // 定義 CORS 標頭
-    const corsHeaders: Record<string, string> = {
+    // 企業級標準安全標頭
+    const baseHeaders: Record<string, string> = {
       'Access-Control-Allow-Origin': allowOriginHeader,
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
       'Access-Control-Max-Age': '86400',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
       'Vary': 'Origin'
     };
 
-    // 預檢請求一律最優先返回 204
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders });
+      return new Response(null, { status: 204, headers: baseHeaders });
     }
 
     try {
-      // 跨域來源檢查
       if (origin && !isAllowed) {
-        return new Response('Forbidden origin', { status: 403, headers: corsHeaders });
+        return new Response('Forbidden origin', { status: 403, headers: baseHeaders });
       }
 
       const hostPassword = env.HOST_PASSWORD || '123456';
       const roomSecret = env.ROOM_SECRET || 'askif-default-edge-secret-key-2026';
       const url = new URL(request.url);
 
-      // 端點：POST /api/create-room（開房並簽發 Ticket）
+      // 端點：POST /api/create-room（主持開房並簽發 Ticket）
       if (url.pathname === '/api/create-room' && request.method === 'POST') {
         const contentType = request.headers.get('Content-Type') || '';
         if (!contentType.includes('application/json')) {
-          return new Response('Unsupported Media Type', { status: 415, headers: corsHeaders });
+          return new Response('Unsupported Media Type', { status: 415, headers: baseHeaders });
         }
 
         let bodyText = '';
@@ -106,21 +106,20 @@ export default {
             received += value.length;
             if (received > 1024) {
               await reader.cancel();
-              return new Response('Payload too large', { status: 413, headers: corsHeaders });
+              return new Response('Payload too large', { status: 413, headers: baseHeaders });
             }
             bodyText += decoder.decode(value, { stream: true });
           }
           bodyText += decoder.decode();
         }
 
-        // 限流防護（若有設定 AUTH_RATE_LIMITER 則執行）
         if (env.AUTH_RATE_LIMITER) {
           const clientIp = request.headers.get('CF-Connecting-IP') || 'global';
           const { success } = await env.AUTH_RATE_LIMITER.limit({ key: clientIp });
           if (!success) {
             return new Response(JSON.stringify({ error: 'Too many requests, please slow down.' }), {
               status: 429,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              headers: { ...baseHeaders, 'Content-Type': 'application/json' }
             });
           }
         }
@@ -130,7 +129,7 @@ export default {
           if (!password || !timingSafeEqual(password, hostPassword)) {
             return new Response(JSON.stringify({ error: 'Unauthorized password' }), {
               status: 401,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              headers: { ...baseHeaders, 'Content-Type': 'application/json' }
             });
           }
 
@@ -141,10 +140,10 @@ export default {
 
           return new Response(JSON.stringify({ roomId, ticket }), {
             status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: { ...baseHeaders, 'Content-Type': 'application/json' }
           });
         } catch {
-          return new Response('Malformed JSON body', { status: 400, headers: corsHeaders });
+          return new Response('Malformed JSON body', { status: 400, headers: baseHeaders });
         }
       }
 
@@ -152,28 +151,39 @@ export default {
       if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
         return new Response('AskIf Relay: Expected WebSocket connection', {
           status: 426,
-          headers: { ...corsHeaders, Upgrade: 'websocket' }
+          headers: { ...baseHeaders, Upgrade: 'websocket' }
         });
       }
 
       const roomParam = url.searchParams.get('room');
       if (!roomParam) {
-        return new Response('Missing room ticket', { status: 400, headers: corsHeaders });
+        return new Response('Missing room ticket or ID', { status: 400, headers: baseHeaders });
       }
 
-      const { valid, roomId } = await verifyRoomTicket(roomParam, roomSecret);
-      if (!valid) {
-        return new Response('Invalid or expired room ticket', { status: 403, headers: corsHeaders });
+      const requestedRole = (url.searchParams.get('role') || 'audience').toLowerCase();
+      let targetRoomId = '';
+
+      if (requestedRole === 'host') {
+        const { valid, roomId } = await verifyRoomTicket(roomParam, roomSecret);
+        if (!valid) {
+          return new Response('Invalid or expired room ticket', { status: 403, headers: baseHeaders });
+        }
+        targetRoomId = roomId;
+      } else {
+        if (!/^\d{6}$/.test(roomParam)) {
+          return new Response('Invalid room ID format', { status: 400, headers: baseHeaders });
+        }
+        targetRoomId = roomParam;
       }
 
-      const id = env.ROOM_HUB.idFromName(roomId);
+      const id = env.ROOM_HUB.idFromName(targetRoomId);
       return env.ROOM_HUB.get(id).fetch(request);
 
     } catch (err: any) {
       console.error('[Worker Unhandled Error]', err);
       return new Response(JSON.stringify({ error: err?.message || 'Internal Server Error' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...baseHeaders, 'Content-Type': 'application/json' }
       });
     }
   }
